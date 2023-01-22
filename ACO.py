@@ -189,6 +189,11 @@ def plot(nodes, final_best_nodes, mode, labels, line_width=1, point_radius=math.
     plt.gcf().clear()
 
 def find_closest_distance_between_polys(poly0,poly1,poly2,poly3):
+    #TODO Burada n tane çokgen gelecek, n çokgenin n^2-2(?) adet bağlantısı olacak
+    #Bu bağlantılar arrayde belirli bir algoritma (Sıra) ile tutulmalıdır. 
+    #Bu bağlantı nodeları (Bridge Nodes) Normal Nodeların bulunduğu kümelerden çıkarılmalı, Son durak olarak eklenebilir ?
+    
+    
     # find the closest points between the two polygons
     closest_points = nearest_points(poly0, poly1)
     
@@ -248,11 +253,17 @@ if __name__ == '__main__':
 
     kmeans = KMeans(n_clusters=4, init='k-means++', random_state=0).fit(nodes)
  
+    
+    #TODO Merkez noktaları en yakın kümeler arasında geçiş yapılacak
+    cluster_centers_=kmeans.cluster_centers_
+    
     nodelar = np.empty((52,3))
     nodelar[:,:-1] = nodes
     nodelar[:,2]=kmeans.labels_
     nodesX0,nodesY0,nodesX1,nodesY1,nodesX2,nodesY2,nodesX3,nodesY3=np.empty([0,2]),np.empty([0,2]),np.empty([0,2]),np.empty([0,2]),np.empty([0,2]),np.empty([0,2]),np.empty([0,2]),np.empty([0,2])
 
+    #TODO Otomatik hale getirilmeli, Küme geçişlerine Bridge Node, -1,-1 node'u gibi belirgin bir şey koyulabilir.
+    #Burada yapılan bir bug Run fonksiyonunu etkiler.
     for i in range(len(nodelar)):
         node=nodelar[i]
         if node[2]==0:
@@ -273,7 +284,7 @@ if __name__ == '__main__':
     nodes2=np.column_stack((nodesX2,nodesY2))
     nodes3=np.column_stack((nodesX3,nodesY3))
     
-    
+    #Çokgenler Arasındaki en kısa yol için
     poly0 = Polygon(nodes0)
     poly1 = Polygon(nodes1)
     poly2 = Polygon(nodes2)
@@ -293,6 +304,9 @@ if __name__ == '__main__':
     nodes02=pre4run(nodes2)
     nodes03=pre4run(nodes3)
     
+    #TODO Tüm Nodelar SIRAYLA birleştirilmeli.
+    # Her küme kendi arasında Tek bir arrayde run edebilirse bu işleme gerek kalmaz
+    # Küme Nodeları ve Bridge Nodeları Bir arada tutulmuş olunur.
     finalnodes = np.empty([0,2])
     for node in nodes00:
         finalnodes=np.append(finalnodes, nodes0[node-1])
@@ -318,4 +332,4 @@ if __name__ == '__main__':
     
     
     
-    
+  
