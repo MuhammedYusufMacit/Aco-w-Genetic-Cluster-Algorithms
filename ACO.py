@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Jan 29 21:11:27 2023
+
+@author: LENOVO
+"""
+
 import math
 import random
 import pandas as pd
@@ -12,11 +19,14 @@ from scipy.spatial import distance
 from shapely.ops import nearest_points
 from shapely.geometry import Polygon
 
+n_clusters = 4
+
 # FONKSİYONLAR
 finishvariable=0.0
 totalLength=0.0
 number_of_iterations=1
 colony_size=1
+
 def weighted_random_choice(choices):
     max = sum(choices.values())
     pick = random.uniform(0, max)
@@ -188,44 +198,21 @@ def plot(nodes, final_best_nodes, mode, labels, line_width=1, point_radius=math.
     plt.show()
     plt.gcf().clear()
 
-def find_closest_distance_between_polys(poly0,poly1,poly2,poly3):
-    #TODO Burada n tane çokgen gelecek, n çokgenin n^2-2(?) adet bağlantısı olacak
+def find_closest_distance_between_polys(polygons):
+     #TODO Burada n tane çokgen gelecek, n çokgenin n^2-2(?) adet bağlantısı olacak
     #Bu bağlantılar arrayde belirli bir algoritma (Sıra) ile tutulmalıdır. 
     #Bu bağlantı nodeları (Bridge Nodes) Normal Nodeların bulunduğu kümelerden çıkarılmalı, Son durak olarak eklenebilir ?
-    
-    
-    # find the closest points between the two polygons
-    closest_points = nearest_points(poly0, poly1)
-    
-    point0to1 = np.array([closest_points[0].x, closest_points[0].y])
-    point1to0 = np.array([closest_points[1].x, closest_points[1].y])
-    
-    closest_points = nearest_points(poly1, poly2)
+    closest_points = []
 
-    point1to2 = np.array([closest_points[0].x, closest_points[0].y])
-    point2to1 = np.array([closest_points[1].x, closest_points[1].y])
-    
-    closest_points = nearest_points(poly2, poly3)
-
-    point2to3 = np.array([closest_points[0].x, closest_points[0].y])
-    point3to2 = np.array([closest_points[1].x, closest_points[1].y])
-    
-    closest_points = nearest_points(poly3, poly0)
-
-    point3to0 = np.array([closest_points[0].x, closest_points[0].y])
-    point0to3 = np.array([closest_points[1].x, closest_points[1].y])
-    
-    closest_points = nearest_points(poly0, poly2)
-
-    point0to2 = np.array([closest_points[0].x, closest_points[0].y])
-    point2to0 = np.array([closest_points[1].x, closest_points[1].y])
-    
-    closest_points = nearest_points(poly1, poly3)
-
-    point1to3 = np.array([closest_points[0].x, closest_points[0].y])
-    point3to1 = np.array([closest_points[1].x, closest_points[1].y])
-
-    closest_points=[point0to1,point1to0,point1to2,point2to1,point2to3,point3to2,point3to0,point0to3,point0to2,point2to0,point1to3,point3to1]
+    for i in range(n_clusters):
+        for j in range(i+1,n_clusters):
+            if i == j:
+                continue
+            nearest_points_ = nearest_points(polygons[i], polygons[j])
+            point_i_to_j = np.array([nearest_points_[0].x, nearest_points_[0].y])
+            point_j_to_i = np.array([nearest_points_[1].x, nearest_points_[1].y])
+            closest_points.append(point_i_to_j)
+            closest_points.append(point_j_to_i)
     
     return closest_points
 
@@ -246,90 +233,63 @@ def pre4run(nodes):
 if __name__ == '__main__':
     # DEĞİŞKENLER
     mode = 'Standard ACO without 2opt'
-    nodes = pd.read_excel('C:\\Users\\Administrator\\Desktop\\Masaüstü\\Tez\\berlin52.xls').values
-    number_of_nodes = len(nodes)
+    nodes_excel = pd.read_excel('C:\\Users\\LENOVO\\OneDrive\\Masaüstü\\berlin52.xls').values
+    number_of_nodes = len(nodes_excel)
     global cost_distance
     global pheromone
 
-    kmeans = KMeans(n_clusters=4, init='k-means++', random_state=0).fit(nodes)
+    kmeans = KMeans(n_clusters, init='k-means++', random_state=0).fit(nodes_excel)
  
     
     #TODO Merkez noktaları en yakın kümeler arasında geçiş yapılacak
     cluster_centers_=kmeans.cluster_centers_
     
     nodelar = np.empty((52,3))
-    nodelar[:,:-1] = nodes
+    nodelar[:,:-1] = nodes_excel
     nodelar[:,2]=kmeans.labels_
-    nodesX0,nodesY0,nodesX1,nodesY1,nodesX2,nodesY2,nodesX3,nodesY3=np.empty([0,2]),np.empty([0,2]),np.empty([0,2]),np.empty([0,2]),np.empty([0,2]),np.empty([0,2]),np.empty([0,2]),np.empty([0,2])
-
-    #TODO Otomatik hale getirilmeli, Küme geçişlerine Bridge Node, -1,-1 node'u gibi belirgin bir şey koyulabilir.
-    #Burada yapılan bir bug Run fonksiyonunu etkiler.
-    for i in range(len(nodelar)):
-        node=nodelar[i]
-        if node[2]==0:
-            nodesX0 = np.append(nodesX0,node[0])
-            nodesY0 = np.append(nodesY0,node[1])
-        if node[2]==1:
-            nodesX1 = np.append(nodesX1,node[0])
-            nodesY1 = np.append(nodesY1,node[1])
-        if node[2]==2:
-            nodesX2 = np.append(nodesX2,node[0])
-            nodesY2 = np.append(nodesY2,node[1])
-        if node[2]==3:
-            nodesX3 = np.append(nodesX3,node[0])
-            nodesY3 = np.append(nodesY3,node[1])
-            
-    nodes0=np.column_stack((nodesX0,nodesY0))
-    nodes1=np.column_stack((nodesX1,nodesY1))
-    nodes2=np.column_stack((nodesX2,nodesY2))
-    nodes3=np.column_stack((nodesX3,nodesY3))
     
-    #Çokgenler Arasındaki en kısa yol için
-    poly0 = Polygon(nodes0)
-    poly1 = Polygon(nodes1)
-    poly2 = Polygon(nodes2)
-    poly3 = Polygon(nodes3)
+ # TODO Otomatik hale getirilmeli, Küme geçişlerine Bridge Node, -1,-1 node'u gibi belirgin bir şey koyulabilir.
+    # her class için node ları depolamak için bir dictionary oluşturulur
+    nodes = {i: np.empty([0,2]) for i in range(n_clusters)}
 
-    closest_points = find_closest_distance_between_polys(poly0, poly1, poly2, poly3)
+    # her node'da loop yapılır ve o node uygun sınıfa eklenir 
+    for node in nodelar:
+        nodes[node[2]] = np.append(nodes[node[2]], [node[:2]], axis=0)
+
+    # her sınıf için poligon oluşturulur. 
+    polys = {i: Polygon(nodes[i]) for i in range(n_clusters)}
+
+
+    closest_points = find_closest_distance_between_polys(polys)
+    
     
     rho = 0.5
-    number_of_iterations=100
-    colony_size=100
+    number_of_iterations=3
+    colony_size=3
     initial_pheromone = 1.0
     initial_pheromone_weight = 1.0
  
-
-    nodes00=pre4run(nodes0)
-    nodes01=pre4run(nodes1)
-    nodes02=pre4run(nodes2)
-    nodes03=pre4run(nodes3)
     
-    #TODO Tüm Nodelar SIRAYLA birleştirilmeli.
-    # Her küme kendi arasında Tek bir arrayde run edebilirse bu işleme gerek kalmaz
-    # Küme Nodeları ve Bridge Nodeları Bir arada tutulmuş olunur.
+    nodes00=pre4run(nodes[0])
+    nodes01=pre4run(nodes[1])
+    nodes02=pre4run(nodes[2])
+    nodes03=pre4run(nodes[3])
+    
     finalnodes = np.empty([0,2])
     for node in nodes00:
-        finalnodes=np.append(finalnodes, nodes0[node-1])
+        finalnodes=np.append(finalnodes, nodes[0][node-1])
     finalnodes=np.append(finalnodes, closest_points[0])
     finalnodes=np.append(finalnodes, closest_points[1])
     for node in nodes01:
-        finalnodes=np.append(finalnodes, nodes1[node-1])
+        finalnodes=np.append(finalnodes, nodes[1][node-1])
     finalnodes=np.append(finalnodes, closest_points[2])
     finalnodes=np.append(finalnodes, closest_points[3])
     for node in nodes02:
-        finalnodes=np.append(finalnodes, nodes2[node-1])
+        finalnodes=np.append(finalnodes, nodes[2][node-1])
     
-
-
-    pre4run(nodes)
+    pre4run(nodes_excel)
     #nodes0.extend(nodes1)
     
   
     
  #BEST 7542   
-
-
-    
-    
-    
-  
