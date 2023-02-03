@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 
 import math
 import random
@@ -13,6 +12,8 @@ import numpy as np
 from scipy.spatial import distance
 from shapely.ops import nearest_points
 from shapely.geometry import Polygon
+
+
 
 # FONKSİYONLAR
 # weighted_random_choice()
@@ -77,7 +78,11 @@ def _select_node(tour_nodes):
     selected = weighted_random_choice(probabilities)
 
     return selected
-
+"""
+genetic + En iyi rotayı bulduktan sonra, bir önceki rotaylar düğümleri birleştirip 
+çaprazlama /mutasyonözelliği kullanılabilir
+Kümeleme + 
+"""
 # karıncanın bir sonraki gideceğim düğüm belirlendi, burada tüm rota oluşturuluyor
 def tour_construction():
     tour_nodes = [1] #[random.randint(0, number_of_nodes - 1)]  # rastgele gidilecek düğüm
@@ -177,6 +182,19 @@ def run(mode, nodes):
     run.totalLength=round(final_best_distance, 2)
     return final_best_nodes
 
+def fakerun(nodes,final_best_nodes):
+    
+    number_of_nodes=len(nodes)
+    labels = range(1, number_of_nodes + 1)
+    final_best_nodes = final_best_nodes
+    final_best_distance = float("inf")
+    #SUM(Kümelerin Distance'ı + köprülerin distance'ı)
+    
+    print('Sequence : <- {0} ->'.format(' - '.join(str(labels[i]) for i in final_best_nodes)))
+    print('Total distance travelled to complete the tour : {0}\n'.format(round(final_best_distance, 2)))
+    plot(nodes, final_best_nodes, mode, labels)
+
+
 # ekrana grafik çıkarmak için
 def plot(nodes, final_best_nodes, mode, labels, line_width=1, point_radius=math.sqrt(2.0), annotation_size=8, dpi=120, save=True, name=None):
     x = [nodes[i][0] for i in final_best_nodes]
@@ -229,14 +247,18 @@ def pre4run(nodes):
     return final_best_nodes
     
 if __name__ == '__main__':
-    # DEĞİŞKENLER
+
+
+    start = time.perf_counter()
     mode = 'Standard ACO without 2opt'
-    nodes_excel = pd.read_excel('C:\\Users\\ASUS\\Downloads\\berlin52.xls').values
+    nodes_excel = pd.read_excel('C:\\Users\\Administrator\\Desktop\\Masaüstü\\Tez\\berlin52.xls').values
     number_of_nodes = len(nodes_excel)
     global cost_distance
     global pheromone
 
+    
     kmeans = KMeans(n_clusters, init='k-means++', random_state=0).fit(nodes_excel)
+    
  
     
     #TODO Merkez noktaları en yakın kümeler arasında geçiş yapılacak
@@ -260,20 +282,22 @@ if __name__ == '__main__':
 
     closest_points = find_closest_distance_between_polys(polys)
     
-    
     rho = 0.5
-    number_of_iterations=3
-    colony_size=3
+    number_of_iterations=20
+    colony_size=20
     initial_pheromone = 1.0
     initial_pheromone_weight = 1.0
  
-    
+
     nodes00=pre4run(nodes[0])
     nodes01=pre4run(nodes[1])
     nodes02=pre4run(nodes[2])
     nodes03=pre4run(nodes[3])
     
-    finalnodes = np.empty([0,2])
+    
+    
+    
+    finalnodes = np.empty([2,0])
     for node in nodes00:
         finalnodes=np.append(finalnodes, nodes[0][node-1])
     finalnodes=np.append(finalnodes, closest_points[0])
@@ -284,10 +308,35 @@ if __name__ == '__main__':
     finalnodes=np.append(finalnodes, closest_points[3])
     for node in nodes02:
         finalnodes=np.append(finalnodes, nodes[2][node-1])
+    finalnodes=np.append(finalnodes, closest_points[4])
+    finalnodes=np.append(finalnodes, closest_points[5])
+    for node in nodes03:
+        finalnodes=np.append(finalnodes, nodes[3][node-1])
+
     
-    pre4run(nodes_excel)
+    a=finalnodes.reshape(len(nodelar)+6,2)
+    
+
+
+    nodes=a
+    final_best_nodes=[]
+    for i in range(len(nodelar)):
+        final_best_nodes.append(i+1)
+        
+    fakerun(nodes,final_best_nodes)
+    
+    rho = 0.5
+    number_of_iterations=0
+    colony_size=0
+    initial_pheromone = 1.0
+    initial_pheromone_weight = 1.0
+    #b=pre4run(nodes)
+    
+    #pre4run(nodes_excel)
     #nodes0.extend(nodes1)
-    
+    finish = time.perf_counter()
+    print(f'Toplam Süre {round(finish - start, 2)} saniye.')
   
+#300*300 değerlerinde 7850 civarlarında sonuç alınmıştır.
     
- #BEST ROUTE 7542   
+ #BEST 7542   
