@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sun Jan 29 21:11:27 2023
-
-@author: LENOVO
-"""
 
 import math
 import random
@@ -19,9 +14,22 @@ from scipy.spatial import distance
 from shapely.ops import nearest_points
 from shapely.geometry import Polygon
 
-n_clusters = 4
-
 # FONKSİYONLAR
+# weighted_random_choice()
+# _select_node()
+# tour_construction()
+# get_instant_distance()
+# get_euclid_distance()
+# _add_pheromone()
+# _evaporation()
+# _aco()
+# run()
+# plot()
+# find_closest_distance_between_polys()
+# pre4run()
+
+# DEĞİŞKENLER
+n_clusters = 4
 finishvariable=0.0
 totalLength=0.0
 number_of_iterations=1
@@ -69,11 +77,7 @@ def _select_node(tour_nodes):
     selected = weighted_random_choice(probabilities)
 
     return selected
-"""
-genetic + En iyi rotayı bulduktan sonra, bir önceki rotaylar düğümleri birleştirip 
-çaprazlama /mutasyonözelliği kullanılabilir
-Kümeleme + 
-"""
+
 # karıncanın bir sonraki gideceğim düğüm belirlendi, burada tüm rota oluşturuluyor
 def tour_construction():
     tour_nodes = [1] #[random.randint(0, number_of_nodes - 1)]  # rastgele gidilecek düğüm
@@ -82,10 +86,7 @@ def tour_construction():
         ekle = _select_node(tour_nodes)
         tour_nodes.append(ekle)
     return tour_nodes
-"""
-genetic +
-Kümeleme +
-"""
+
 # tüm rotası belirlenen karıncanın yolunun ne kadar olduğu belirleniyor
 def get_instant_distance(tour_nodes):
     # karıncanın o ana kadar dolaştığı yolun uzunluğunu belirlemek için kullanılıyor
@@ -124,10 +125,7 @@ def _evaporation():
             pheromone[i][j] *= (1.0 - rho)
 
     return pheromone
-"""
-genetic +
-Kümeleme -
-"""
+
 def _aco(nodes):
     # son durumda en iyi düğüm ve uzunluk bilgisini tutmak için kullanılacaklar
 
@@ -233,7 +231,7 @@ def pre4run(nodes):
 if __name__ == '__main__':
     # DEĞİŞKENLER
     mode = 'Standard ACO without 2opt'
-    nodes_excel = pd.read_excel('C:\\Users\\LENOVO\\OneDrive\\Masaüstü\\berlin52.xls').values
+    nodes_excel = pd.read_excel('C:\\Users\\ASUS\\Downloads\\berlin52.xls').values
     number_of_nodes = len(nodes_excel)
     global cost_distance
     global pheromone
@@ -292,4 +290,4 @@ if __name__ == '__main__':
     
   
     
- #BEST 7542   
+ #BEST ROUTE 7542   
