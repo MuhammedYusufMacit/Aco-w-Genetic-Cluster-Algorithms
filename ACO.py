@@ -190,7 +190,7 @@ def fakerun(nodes,final_best_nodes):
     final_best_distance = float("inf")
     #SUM(Kümelerin Distance'ı + köprülerin distance'ı)
     
-    print('Sequence : <- {0} ->'.format(' - '.join(str(labels[i]) for i in final_best_nodes)))
+    #print('Sequence : <- {0} ->'.format(' - '.join(str(labels[i]) for i in final_best_nodes)))
     print('Total distance travelled to complete the tour : {0}\n'.format(round(final_best_distance, 2)))
     plot(nodes, final_best_nodes, mode, labels)
 
@@ -247,10 +247,16 @@ def pre4run(nodes):
     return final_best_nodes
     
 if __name__ == '__main__':
-
+    rho = 0.5
+    number_of_iterations=200
+    colony_size=200
+    initial_pheromone = 1.0
+    initial_pheromone_weight = 1.0
 
     start = time.perf_counter()
     mode = 'Standard ACO without 2opt'
+    
+    #kroa100 - pr1002 - berlin52
     nodes_excel = pd.read_excel('C:\\Users\\Administrator\\Desktop\\Masaüstü\\Tez\\berlin52.xls').values
     number_of_nodes = len(nodes_excel)
     global cost_distance
@@ -263,12 +269,13 @@ if __name__ == '__main__':
     
     #TODO Merkez noktaları en yakın kümeler arasında geçiş yapılacak
     cluster_centers_=kmeans.cluster_centers_
+    pre4run(cluster_centers_)
     
     nodelar = np.empty((52,3))
     nodelar[:,:-1] = nodes_excel
     nodelar[:,2]=kmeans.labels_
     
- # TODO Otomatik hale getirilmeli, Küme geçişlerine Bridge Node, -1,-1 node'u gibi belirgin bir şey koyulabilir.
+    # TODO Otomatik hale getirilmeli, Küme geçişlerine Bridge Node, -1,-1 node'u gibi belirgin bir şey koyulabilir.
     # her class için node ları depolamak için bir dictionary oluşturulur
     nodes = {i: np.empty([0,2]) for i in range(n_clusters)}
 
@@ -282,17 +289,63 @@ if __name__ == '__main__':
 
     closest_points = find_closest_distance_between_polys(polys)
     
-    rho = 0.5
-    number_of_iterations=20
-    colony_size=20
-    initial_pheromone = 1.0
-    initial_pheromone_weight = 1.0
- 
-
+    
+    """
+    aatest = np.argwhere(nodes[0] == closest_points[0])
+    np.delete(nodes, np.argwhere(nodes == closest_points[0]))
+    aaatest=nodes[0]
+    aaaatest=closest_points[0]
+    """
+    nodes0=nodes[0]
+    nodes1=nodes[1]
+    nodes2=nodes[2]
+    nodes3=nodes[3]
+    
+    #Değer neden küsüratlı geliyor 
+    closest_points[5]=closest_points[5].round()
+    
+    index = np.argwhere(nodes0 == closest_points[0])
+    nodes0 = np.delete(nodes0, index[0]).reshape(len(nodes0)-1,2)
+    
+    index = np.argwhere(nodes1 == closest_points[1])
+    nodes1 = np.delete(nodes1, index[0]).reshape(len(nodes1)-1,2)
+    index = np.argwhere(nodes1 == closest_points[6])
+    nodes1 = np.delete(nodes1, index[0]).reshape(len(nodes1)-1,2)
+    
+    index = np.argwhere(nodes2 == closest_points[3])
+    nodes2 = np.delete(nodes2, index[0]).reshape(len(nodes2)-1,2)
+    #aatest=nodes2
+    index = np.argwhere(nodes2 == closest_points[10])
+    #atest=index
+    #aaatest=np.delete(nodes2, index[1])
+    nodes2 = np.delete(nodes2, index[1]).reshape(len(nodes2)-1,2)
+    #Neden İndex[0] yerine İndex[1] oldu ? - İndex[0] neden 0-0 olup,yarım eleman sildi?
+    
+    index = np.argwhere(nodes3 == closest_points[11])
+    nodes3 = np.delete(nodes3, index[0]).reshape(len(nodes3)-1,2)
+    
+    
+    
+    """
+    np.delete(nodes[1], np.argwhere(nodes[1] == closest_points[1]))
+    np.delete(nodes[2], np.argwhere(nodes[2] == closest_points[3]))
+    np.delete(nodes[3], np.argwhere(nodes[3] == closest_points[5]))
+    np.delete(nodes[1], np.argwhere(nodes[1] == closest_points[2]))
+    np.delete(nodes[2], np.argwhere(nodes[2] == closest_points[4]))
+    """
+    """
     nodes00=pre4run(nodes[0])
     nodes01=pre4run(nodes[1])
     nodes02=pre4run(nodes[2])
     nodes03=pre4run(nodes[3])
+    """
+    
+    nodes00=pre4run(nodes0)
+    nodes01=pre4run(nodes1)
+    nodes02=pre4run(nodes2)
+    nodes03=pre4run(nodes3)
+    
+    #İndis düzenleme işi aco içinde yapılacak
     
     
     
@@ -314,14 +367,14 @@ if __name__ == '__main__':
         finalnodes=np.append(finalnodes, nodes[3][node-1])
 
     
-    a=finalnodes.reshape(len(nodelar)+6,2)
+    a=finalnodes.reshape(len(nodelar),2)
     
 
 
     nodes=a
     final_best_nodes=[]
-    for i in range(len(nodelar)):
-        final_best_nodes.append(i+1)
+    for i in range(len(nodes)):
+        final_best_nodes.append(i)
         
     fakerun(nodes,final_best_nodes)
     
