@@ -1,4 +1,3 @@
-
 import math
 import random
 import pandas as pd
@@ -28,6 +27,13 @@ from shapely.geometry import Polygon
 # plot()
 # find_closest_distance_between_polys()
 # pre4run()
+
+class Bridge_Node:
+
+    def __init__(self, a, d, x_y): #constructor that takes 3 arguments (the self is the class itself)
+        self.arrival_cluster=a
+        self.departure_cluster=d
+        self.x_y=x_y
 
 # DEĞİŞKENLER
 n_clusters = 4
@@ -215,9 +221,9 @@ def plot(nodes, final_best_nodes, mode, labels, line_width=1, point_radius=math.
     plt.gcf().clear()
 
 def find_closest_distance_between_polys(polygons):
-     #TODO Burada n tane çokgen gelecek, n çokgenin n^2-2(?) adet bağlantısı olacak
+     #TODO Burada n tane çokgen gelecek, n çokgenin n^2-2() adet bağlantısı olacak
     #Bu bağlantılar arrayde belirli bir algoritma (Sıra) ile tutulmalıdır. 
-    #Bu bağlantı nodeları (Bridge Nodes) Normal Nodeların bulunduğu kümelerden çıkarılmalı, Son durak olarak eklenebilir ?
+    #Bu bağlantı nodeları (Bridge Nodes) Normal Nodeların bulunduğu kümelerden çıkarılmalı, Son durak olarak eklenebilir 
     closest_points = []
 
     for i in range(n_clusters):
@@ -225,8 +231,14 @@ def find_closest_distance_between_polys(polygons):
             if i == j:
                 continue
             nearest_points_ = nearest_points(polygons[i], polygons[j])
-            point_i_to_j = np.array([nearest_points_[0].x, nearest_points_[0].y])
-            point_j_to_i = np.array([nearest_points_[1].x, nearest_points_[1].y])
+            point_i_to_j=Bridge_Node(i, j,[nearest_points_[0].x, nearest_points_[0].y])
+            point_j_to_i=Bridge_Node(j, i,[nearest_points_[1].x, nearest_points_[1].y])
+            
+            #print(nearest_points_[0].x, nearest_points_[0].y)
+            #print(nearest_points_[1].x, nearest_points_[1].y)
+            #print('***')
+
+
             closest_points.append(point_i_to_j)
             closest_points.append(point_j_to_i)
     
@@ -248,8 +260,8 @@ def pre4run(nodes):
     
 if __name__ == '__main__':
     rho = 0.5
-    number_of_iterations=200
-    colony_size=200
+    number_of_iterations=30
+    colony_size=10
     initial_pheromone = 1.0
     initial_pheromone_weight = 1.0
 
@@ -257,7 +269,7 @@ if __name__ == '__main__':
     mode = 'Standard ACO without 2opt'
     
     #kroa100 - pr1002 - berlin52
-    nodes_excel = pd.read_excel('C:\\Users\\Administrator\\Desktop\\Masaüstü\\Tez\\berlin52.xls').values
+    nodes_excel = pd.read_excel('C:\\Users\\LENOVO\\OneDrive\\Masaüstü\\berlin52.xls').values
     number_of_nodes = len(nodes_excel)
     global cost_distance
     global pheromone
@@ -289,88 +301,27 @@ if __name__ == '__main__':
 
     closest_points = find_closest_distance_between_polys(polys)
     
+    nodes0, nodes1, nodes2, nodes3 = nodes
     
-    """
-    aatest = np.argwhere(nodes[0] == closest_points[0])
-    np.delete(nodes, np.argwhere(nodes == closest_points[0]))
-    aaatest=nodes[0]
-    aaaatest=closest_points[0]
-    """
-    nodes0=nodes[0]
-    nodes1=nodes[1]
-    nodes2=nodes[2]
-    nodes3=nodes[3]
-    
-    #Değer neden küsüratlı geliyor 
-    closest_points[5]=closest_points[5].round()
-    
-    index = np.argwhere(nodes0 == closest_points[0])
-    nodes0 = np.delete(nodes0, index[0]).reshape(len(nodes0)-1,2)
-    
-    index = np.argwhere(nodes1 == closest_points[1])
-    nodes1 = np.delete(nodes1, index[0]).reshape(len(nodes1)-1,2)
-    index = np.argwhere(nodes1 == closest_points[6])
-    nodes1 = np.delete(nodes1, index[0]).reshape(len(nodes1)-1,2)
-    
-    index = np.argwhere(nodes2 == closest_points[3])
-    nodes2 = np.delete(nodes2, index[0]).reshape(len(nodes2)-1,2)
-    #aatest=nodes2
-    index = np.argwhere(nodes2 == closest_points[10])
-    #atest=index
-    #aaatest=np.delete(nodes2, index[1])
-    nodes2 = np.delete(nodes2, index[1]).reshape(len(nodes2)-1,2)
-    #Neden İndex[0] yerine İndex[1] oldu ? - İndex[0] neden 0-0 olup,yarım eleman sildi?
-    
-    index = np.argwhere(nodes3 == closest_points[11])
-    nodes3 = np.delete(nodes3, index[0]).reshape(len(nodes3)-1,2)
-    
-    
-    
-    """
-    np.delete(nodes[1], np.argwhere(nodes[1] == closest_points[1]))
-    np.delete(nodes[2], np.argwhere(nodes[2] == closest_points[3]))
-    np.delete(nodes[3], np.argwhere(nodes[3] == closest_points[5]))
-    np.delete(nodes[1], np.argwhere(nodes[1] == closest_points[2]))
-    np.delete(nodes[2], np.argwhere(nodes[2] == closest_points[4]))
-    """
-    """
-    nodes00=pre4run(nodes[0])
-    nodes01=pre4run(nodes[1])
-    nodes02=pre4run(nodes[2])
-    nodes03=pre4run(nodes[3])
-    """
-    
-    nodes00=pre4run(nodes0)
-    nodes01=pre4run(nodes1)
-    nodes02=pre4run(nodes2)
-    nodes03=pre4run(nodes3)
+    preprocessed_nodes = [pre4run(nodes[i]) for i in range(4)]
+    nodes00, nodes01, nodes02, nodes03 = map(np.array, preprocessed_nodes)
     
     #İndis düzenleme işi aco içinde yapılacak
-    
-    
-    
-    
+
     finalnodes = np.empty([2,0])
-    for node in nodes00:
-        finalnodes=np.append(finalnodes, nodes[0][node-1])
-    finalnodes=np.append(finalnodes, closest_points[0])
-    finalnodes=np.append(finalnodes, closest_points[1])
-    for node in nodes01:
-        finalnodes=np.append(finalnodes, nodes[1][node-1])
-    finalnodes=np.append(finalnodes, closest_points[2])
-    finalnodes=np.append(finalnodes, closest_points[3])
-    for node in nodes02:
-        finalnodes=np.append(finalnodes, nodes[2][node-1])
-    finalnodes=np.append(finalnodes, closest_points[4])
-    finalnodes=np.append(finalnodes, closest_points[5])
-    for node in nodes03:
-        finalnodes=np.append(finalnodes, nodes[3][node-1])
 
+    finalnodes = np.concatenate((
+    nodes[0][nodes00-1],
+    [closest_points[0].x_y],
+    nodes[1][nodes01-1],
+    [closest_points[6].x_y],
+    nodes[2][nodes02-1],
+    [closest_points[10].x_y],
+    nodes[3][nodes03-1]
+    ))
+ 
+    a=finalnodes.reshape(len(nodelar)+3,2)
     
-    a=finalnodes.reshape(len(nodelar),2)
-    
-
-
     nodes=a
     final_best_nodes=[]
     for i in range(len(nodes)):
@@ -389,7 +340,3 @@ if __name__ == '__main__':
     #nodes0.extend(nodes1)
     finish = time.perf_counter()
     print(f'Toplam Süre {round(finish - start, 2)} saniye.')
-  
-#300*300 değerlerinde 7850 civarlarında sonuç alınmıştır.
-    
- #BEST 7542   
