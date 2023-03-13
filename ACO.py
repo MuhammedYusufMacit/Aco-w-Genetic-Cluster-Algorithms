@@ -220,6 +220,17 @@ def plot(nodes, final_best_nodes, mode, labels, line_width=1, point_radius=math.
         plt.savefig(name, dpi=dpi)
     plt.show()
     plt.gcf().clear()
+    
+def nearest_points_find(polygons):
+
+    for i in range(n_clusters):
+        for j in range(n_clusters):
+            if i == j:
+                continue
+            nearest_points_ = nearest_points(polygons[i], polygons[j])
+
+    
+    return nearest_points_
 
 def find_closest_distance_between_polys(polygons):
      #TODO Burada n tane çokgen gelecek, n çokgenin n^2-2() adet bağlantısı olacak
@@ -228,22 +239,32 @@ def find_closest_distance_between_polys(polygons):
     closest_points = []
 
     for i in range(n_clusters):
-        for j in range(i+1,n_clusters):
+        for j in range(n_clusters):
             if i == j:
                 continue
             nearest_points_ = nearest_points(polygons[i], polygons[j])
             point_i_to_j=Bridge_Node(i, j,[nearest_points_[0].x, nearest_points_[0].y])
-            point_j_to_i=Bridge_Node(j, i,[nearest_points_[1].x, nearest_points_[1].y])
             
-            #print(nearest_points_[0].x, nearest_points_[0].y)
-            #print(nearest_points_[1].x, nearest_points_[1].y)
-            #print('***')
-
-
-            closest_points.append(point_i_to_j)
-            closest_points.append(point_j_to_i)
+            if j-i ==1 or (i==n_clusters-1 and j==0):
+                closest_points.append(point_i_to_j)
+                print('*******')
     
     return closest_points
+
+def find_closest_distance_between_polys2(polygons):
+    closest_points2 = []
+
+    for j in range(n_clusters):
+        for i in range(n_clusters):
+            if i == j:
+                continue
+            nearest_points_ = nearest_points(polygons[i], polygons[j])
+            point_i_to_j=Bridge_Node(i, j,[nearest_points_[0].x, nearest_points_[0].y])
+            
+            if i-j==1 or (j==n_clusters-1 and i==0):
+                closest_points2.append(point_i_to_j)
+    
+    return closest_points2
 
     
 def preprocess4run(nodes):
@@ -259,6 +280,7 @@ def preprocess4run(nodes):
     plot(nodes, final_best_nodes, mode, labels)
     return final_best_nodes
     
+
 def final_nodes_concatinating():
     
     """
@@ -277,10 +299,10 @@ def final_nodes_concatinating():
     finalnodes = np.concatenate((
     nodes[0][nodes00-1],
     [closest_points[0].x_y],
-    nodes[1][nodes01-1],
-    [closest_points[6].x_y],
+    nodes[1][nodes01-1],                           
+    [closest_points[1].x_y],
     nodes[2][nodes02-1],
-    [closest_points[10].x_y],
+    [closest_points[2].x_y],
     nodes[3][nodes03-1]
     ))
     return finalnodes
@@ -298,7 +320,7 @@ if __name__ == '__main__':
     mode = 'Standard ACO without 2opt'
     
     #kroa100 - pr1002 - berlin52
-    nodes_excel = pd.read_excel('C:\\Users\\Turtle\\Datasets\\berlin52.xls').values
+    nodes_excel = pd.read_excel('C:\\Users\\LENOVO\\OneDrive\\Masaüstü\\berlin52.xls').values
     number_of_nodes = len(nodes_excel)
     global cost_distance
     global pheromone
@@ -328,18 +350,23 @@ if __name__ == '__main__':
     polys = {i: Polygon(nodes[i]) for i in range(n_clusters)}
 
 
+    nearest_points_find = nearest_points_find(polys)
+    
     closest_points = find_closest_distance_between_polys(polys)
+    closest_points2 = find_closest_distance_between_polys2(polys)
+
     
     nodes0, nodes1, nodes2, nodes3 = nodes
     
+    # TODO : kümenin gezi için başlayacağı node preprocess4run a ek parametre eklenerek yollanmalı. ?(nur)
+    #preprocessed_nodes = [preprocess4run(nodes[i],closest_points2[i].x_y ) for i in range(n_clusters)] ?(nur)
+
     preprocessed_nodes = [preprocess4run(nodes[i]) for i in range(n_clusters)]
     nodes00, nodes01, nodes02, nodes03 = map(np.array, preprocessed_nodes) 
-    #Nclusters olmalı 0-1-2-3 değil
     
     #İndis düzenleme işi aco içinde yapılacak
 
     finalnodes = np.empty([2,0])
-
     finalnodes = final_nodes_concatinating()
     
  
