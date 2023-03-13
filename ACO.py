@@ -26,7 +26,7 @@ from shapely.geometry import Polygon
 # run()
 # plot()
 # find_closest_distance_between_polys()
-# pre4run()
+# preprocess4run()
 
 class Bridge_Node:
 
@@ -188,7 +188,7 @@ def run(mode, nodes):
     run.totalLength=round(final_best_distance, 2)
     return final_best_nodes
 
-def fakerun(nodes,final_best_nodes):
+def finalplot(nodes,final_best_nodes):
     
     number_of_nodes=len(nodes)
     labels = range(1, number_of_nodes + 1)
@@ -196,7 +196,8 @@ def fakerun(nodes,final_best_nodes):
     final_best_distance = float("inf")
     #SUM(Kümelerin Distance'ı + köprülerin distance'ı)
     
-    #print('Sequence : <- {0} ->'.format(' - '.join(str(labels[i]) for i in final_best_nodes)))
+    run.totalLength=round(final_best_distance, 2)
+    print('Sequence : <- {0} ->'.format(' - '.join(str(labels[i]) for i in final_best_nodes)))
     print('Total distance travelled to complete the tour : {0}\n'.format(round(final_best_distance, 2)))
     plot(nodes, final_best_nodes, mode, labels)
 
@@ -223,7 +224,7 @@ def plot(nodes, final_best_nodes, mode, labels, line_width=1, point_radius=math.
 def find_closest_distance_between_polys(polygons):
      #TODO Burada n tane çokgen gelecek, n çokgenin n^2-2() adet bağlantısı olacak
     #Bu bağlantılar arrayde belirli bir algoritma (Sıra) ile tutulmalıdır. 
-    #Bu bağlantı nodeları (Bridge Nodes) Normal Nodeların bulunduğu kümelerden çıkarılmalı, Son durak olarak eklenebilir 
+    #Bu bağlantı clustered_nodesı (Bridge Nodes) Normal clustered_nodesın bulunduğu kümelerden çıkarılmalı, Son durak olarak eklenebilir 
     closest_points = []
 
     for i in range(n_clusters):
@@ -245,7 +246,7 @@ def find_closest_distance_between_polys(polygons):
     return closest_points
 
     
-def pre4run(nodes):
+def preprocess4run(nodes):
     global pheromone
     global labels
     global cost_distance
@@ -258,10 +259,38 @@ def pre4run(nodes):
     plot(nodes, final_best_nodes, mode, labels)
     return final_best_nodes
     
+def final_nodes_concatinating():
+    
+    """
+    N'in 2'li permütasyonundan --N küme'den 2'şerli gruplama yapılıyor--
+    Fazla sayıda Köprü node'u oluşuyor. Bu P(N,2) yerine N adet köprü node'u gerekiyor
+    
+    Özet olarak: N adet kümenin herbiri N-1 adet kümeye gitmek yerine N adet küme herbiri farklı bir kümeye gitmesi gerekiyor.
+    
+    """
+    bridge_nodes = np.empty([2,0])
+    for i in range(n_clusters,1):
+        for point in closest_points:
+            if point.arrival_cluster==i-1 and point.departure_cluster==i:
+                np.append(bridge_nodes, point)
+                
+    finalnodes = np.concatenate((
+    nodes[0][nodes00-1],
+    [closest_points[0].x_y],
+    nodes[1][nodes01-1],
+    [closest_points[6].x_y],
+    nodes[2][nodes02-1],
+    [closest_points[10].x_y],
+    nodes[3][nodes03-1]
+    ))
+    return finalnodes
+
+
+
 if __name__ == '__main__':
     rho = 0.5
     number_of_iterations=30
-    colony_size=10
+    colony_size=30
     initial_pheromone = 1.0
     initial_pheromone_weight = 1.0
 
@@ -269,7 +298,7 @@ if __name__ == '__main__':
     mode = 'Standard ACO without 2opt'
     
     #kroa100 - pr1002 - berlin52
-    nodes_excel = pd.read_excel('C:\\Users\\LENOVO\\OneDrive\\Masaüstü\\berlin52.xls').values
+    nodes_excel = pd.read_excel('C:\\Users\\Turtle\\Datasets\\berlin52.xls').values
     number_of_nodes = len(nodes_excel)
     global cost_distance
     global pheromone
@@ -281,18 +310,18 @@ if __name__ == '__main__':
     
     #TODO Merkez noktaları en yakın kümeler arasında geçiş yapılacak
     cluster_centers_=kmeans.cluster_centers_
-    pre4run(cluster_centers_)
+    preprocess4run(cluster_centers_)
     
-    nodelar = np.empty((52,3))
-    nodelar[:,:-1] = nodes_excel
-    nodelar[:,2]=kmeans.labels_
+    clustered_nodes = np.empty((52,3))
+    clustered_nodes[:,:-1] = nodes_excel
+    clustered_nodes[:,2]=kmeans.labels_
     
     # TODO Otomatik hale getirilmeli, Küme geçişlerine Bridge Node, -1,-1 node'u gibi belirgin bir şey koyulabilir.
     # her class için node ları depolamak için bir dictionary oluşturulur
     nodes = {i: np.empty([0,2]) for i in range(n_clusters)}
 
     # her node'da loop yapılır ve o node uygun sınıfa eklenir 
-    for node in nodelar:
+    for node in clustered_nodes:
         nodes[node[2]] = np.append(nodes[node[2]], [node[:2]], axis=0)
 
     # her sınıf için poligon oluşturulur. 
@@ -303,40 +332,24 @@ if __name__ == '__main__':
     
     nodes0, nodes1, nodes2, nodes3 = nodes
     
-    preprocessed_nodes = [pre4run(nodes[i]) for i in range(4)]
-    nodes00, nodes01, nodes02, nodes03 = map(np.array, preprocessed_nodes)
+    preprocessed_nodes = [preprocess4run(nodes[i]) for i in range(n_clusters)]
+    nodes00, nodes01, nodes02, nodes03 = map(np.array, preprocessed_nodes) 
+    #Nclusters olmalı 0-1-2-3 değil
     
     #İndis düzenleme işi aco içinde yapılacak
 
     finalnodes = np.empty([2,0])
 
-    finalnodes = np.concatenate((
-    nodes[0][nodes00-1],
-    [closest_points[0].x_y],
-    nodes[1][nodes01-1],
-    [closest_points[6].x_y],
-    nodes[2][nodes02-1],
-    [closest_points[10].x_y],
-    nodes[3][nodes03-1]
-    ))
- 
-    a=finalnodes.reshape(len(nodelar)+3,2)
+    finalnodes = final_nodes_concatinating()
     
-    nodes=a
+ 
+    nodes=finalnodes.reshape(len(clustered_nodes)+3,2)
     final_best_nodes=[]
     for i in range(len(nodes)):
         final_best_nodes.append(i)
         
-    fakerun(nodes,final_best_nodes)
+    finalplot(nodes,final_best_nodes)
     
-    rho = 0.5
-    number_of_iterations=0
-    colony_size=0
-    initial_pheromone = 1.0
-    initial_pheromone_weight = 1.0
-    #b=pre4run(nodes)
-    
-    #pre4run(nodes_excel)
-    #nodes0.extend(nodes1)
+
     finish = time.perf_counter()
     print(f'Toplam Süre {round(finish - start, 2)} saniye.')
