@@ -36,11 +36,15 @@ class Bridge_Node:
         self.x_y=x_y
 
 # DEĞİŞKENLER
+path = 'C:\\Users\\TRON PCH\\Documents\\berlin52.xls'
 n_clusters = 4
 finishvariable=0.0
 totalLength=0.0
-number_of_iterations=1
-colony_size=1
+rho = 0.5
+number_of_iterations=30
+colony_size=30
+initial_pheromone = 1.0
+initial_pheromone_weight = 1.0
 
 def weighted_random_choice(choices):
     max = sum(choices.values())
@@ -310,17 +314,12 @@ def final_nodes_concatinating():
 
 
 if __name__ == '__main__':
-    rho = 0.5
-    number_of_iterations=30
-    colony_size=30
-    initial_pheromone = 1.0
-    initial_pheromone_weight = 1.0
 
     start = time.perf_counter()
     mode = 'Standard ACO without 2opt'
     
     #kroa100 - pr1002 - berlin52
-    nodes_excel = pd.read_excel('C:\\Users\\LENOVO\\OneDrive\\Masaüstü\\berlin52.xls').values
+    nodes_excel = pd.read_excel(path).values
     number_of_nodes = len(nodes_excel)
     global cost_distance
     global pheromone
