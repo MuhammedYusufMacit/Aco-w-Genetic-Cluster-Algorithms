@@ -225,23 +225,14 @@ def plot(nodes, final_best_nodes, mode, labels, line_width=1, point_radius=math.
     plt.show()
     plt.gcf().clear()
     
-def nearest_points_find(polygons):
-
-    for i in range(n_clusters):
-        for j in range(n_clusters):
-            if i == j:
-                continue
-            nearest_points_ = nearest_points(polygons[i], polygons[j])
-
-    
-    return nearest_points_
 
 def find_closest_distance_between_polys(polygons):
      #TODO Burada n tane çokgen gelecek, n çokgenin n^2-2() adet bağlantısı olacak
     #Bu bağlantılar arrayde belirli bir algoritma (Sıra) ile tutulmalıdır. 
     #Bu bağlantı clustered_nodesı (Bridge Nodes) Normal clustered_nodesın bulunduğu kümelerden çıkarılmalı, Son durak olarak eklenebilir 
     closest_points = []
-
+    closest_points2 = []
+    
     for i in range(n_clusters):
         for j in range(n_clusters):
             if i == j:
@@ -251,24 +242,10 @@ def find_closest_distance_between_polys(polygons):
             
             if j-i ==1 or (i==n_clusters-1 and j==0):
                 closest_points.append(point_i_to_j)
+                closest_points2.append(point_i_to_j)
                 print('*******')
     
-    return closest_points
-
-def find_closest_distance_between_polys2(polygons):
-    closest_points2 = []
-
-    for j in range(n_clusters):
-        for i in range(n_clusters):
-            if i == j:
-                continue
-            nearest_points_ = nearest_points(polygons[i], polygons[j])
-            point_i_to_j=Bridge_Node(i, j,[nearest_points_[0].x, nearest_points_[0].y])
-            
-            if i-j==1 or (j==n_clusters-1 and i==0):
-                closest_points2.append(point_i_to_j)
-    
-    return closest_points2
+    return closest_points,closest_points2,nearest_points_
 
     
 def preprocess4run(nodes):
@@ -348,11 +325,8 @@ if __name__ == '__main__':
     # her sınıf için poligon oluşturulur. 
     polys = {i: Polygon(nodes[i]) for i in range(n_clusters)}
 
-
-    nearest_points_find = nearest_points_find(polys)
     
-    closest_points = find_closest_distance_between_polys(polys)
-    closest_points2 = find_closest_distance_between_polys2(polys)
+    closest_points,closest_points2,nearest_points_find = find_closest_distance_between_polys(polys)
 
     
     nodes0, nodes1, nodes2, nodes3 = nodes
