@@ -12,7 +12,20 @@ from scipy.spatial import distance
 from shapely.ops import nearest_points
 from shapely.geometry import Polygon
 
+"""
+TODO's
+Cluster_End_Nodes Karınca Kolonisinın çalıştırılacağı nodeların bulunduğu kümelerden çıkarılmalı, Final_nodes kısmında eklenmeli
+Cluster_start_Nodes her kümede tespit edilmeli, tour_construction fonksiyonuna gönderilmeli.
+    
+Genetic Algoritmalar için: En iyi rotayı bulduktan sonra, bir önceki rotalar düğümleri birleştirip çaprazlama /mutasyonözelliği kullanılabilir
 
+Nodes Mapping N küme için yapılmalı
+find_first_node fonksiyonundaki hatalar giderilmeli
+
+Merkez noktaları en yakın kümeler arasında geçiş yapılabilir
+
+Başlangıç ve bitiş nodeları elimizde var fakat bulduğumuz bu nodeları elimizdeki node'larla eşleyemiyoruz. En yakın nokta bulma işleminde bu sorun çözülebilir. Elimizdeki float değer olmamasına rağmen en yakın nokta bulan fonksiyon bir float değer döndürüyor.
+"""
 
 # FONKSİYONLAR
 # weighted_random_choice()
@@ -35,8 +48,10 @@ class Bridge_Node:
         self.departure_cluster=d
         self.x_y=x_y
 
+
 # DEĞİŞKENLER
-path = 'C:\\Users\\TRON PCH\\Documents\\berlin52.xls'
+paths= 'C:\\Users\\TRON PCH\\Documents\\berlin52.xls', 'C:\\Users\\Turtle\\Datasets\\berlin52.xls', 'C:\\Users\\LENOVO\\OneDrive\\Masaüstü\\berlin52.xls'
+path = paths[1]
 n_clusters = 4
 finishvariable=0.0
 totalLength=0.0
@@ -45,7 +60,8 @@ number_of_iterations=30
 colony_size=30
 initial_pheromone = 1.0
 initial_pheromone_weight = 1.0
-
+cluster_end_points = []
+cluster_start_points = []
 def weighted_random_choice(choices):
     max = sum(choices.values())
     pick = random.uniform(0, max)
@@ -88,13 +104,12 @@ def _select_node(tour_nodes):
     selected = weighted_random_choice(probabilities)
 
     return selected
-"""
-genetic + En iyi rotayı bulduktan sonra, bir önceki rotaylar düğümleri birleştirip 
-çaprazlama /mutasyonözelliği kullanılabilir
-Kümeleme + 
-"""
+
 # karıncanın bir sonraki gideceğim düğüm belirlendi, burada tüm rota oluşturuluyor
-def tour_construction():
+def tour_construction(first_node):
+    if first_node==-1:
+        #print("Başlangıç Node'u Null geldi, değer 0 olarak atandı")
+        first_node=0
     tour_nodes = [1] #[random.randint(0, number_of_nodes - 1)]  # rastgele gidilecek düğüm
 
     while len(tour_nodes) < number_of_nodes:
@@ -141,7 +156,7 @@ def _evaporation():
 
     return pheromone
 
-def _aco(nodes):
+def _aco(nodes,first_node):
     # son durumda en iyi düğüm ve uzunluk bilgisini tutmak için kullanılacaklar
 
     final_best_nodes = None
@@ -157,7 +172,7 @@ def _aco(nodes):
         # start1 = time.perf_counter()
         # her iterasyonda karıncalar için rota oluşturulup yol hesabı yapılıyor
         for i in range(colony_size):
-            ants_nodes.append(tour_construction())
+            ants_nodes.append(tour_construction(first_node))
         # finish1 = time.perf_counter()
         # print(f'Finished in {round(finish1 - start1, 4)} sec(s)')
 
@@ -182,9 +197,9 @@ def _aco(nodes):
     return final_best_nodes, final_best_distance
 
 
-def run(mode, nodes):
+def run(mode, nodes,first_node):
     print('Started : {0}'.format(mode))
-    final_best_nodes, final_best_distance = _aco(nodes)
+    final_best_nodes, final_best_distance = _aco(nodes,first_node)
 
     print('Ended : {0}'.format(mode))
     print('Sequence : <- {0} ->'.format(' - '.join(str(labels[i]) for i in final_best_nodes)))
@@ -227,11 +242,8 @@ def plot(nodes, final_best_nodes, mode, labels, line_width=1, point_radius=math.
     
 
 def find_closest_distance_between_polys(polygons):
-     #TODO Burada n tane çokgen gelecek, n çokgenin n^2-2() adet bağlantısı olacak
-    #Bu bağlantılar arrayde belirli bir algoritma (Sıra) ile tutulmalıdır. 
-    #Bu bağlantı clustered_nodesı (Bridge Nodes) Normal clustered_nodesın bulunduğu kümelerden çıkarılmalı, Son durak olarak eklenebilir 
-    closest_points = []
-    closest_points2 = []
+    
+
     
     for i in range(n_clusters):
         for j in range(n_clusters):
@@ -241,14 +253,13 @@ def find_closest_distance_between_polys(polygons):
             point_i_to_j=Bridge_Node(i, j,[nearest_points_[0].x, nearest_points_[0].y])
             
             if j-i ==1 or (i==n_clusters-1 and j==0):
-                closest_points.append(point_i_to_j)
-                closest_points2.append(point_i_to_j)
-                print('*******')
+                cluster_end_points.append(point_i_to_j)
+                cluster_start_points.append(point_i_to_j)
     
-    return closest_points,closest_points2,nearest_points_
+    return nearest_points_,cluster_end_points,cluster_start_points
 
     
-def preprocess4run(nodes):
+def preprocess4run(nodes,first_node):
     global pheromone
     global labels
     global cost_distance
@@ -257,33 +268,37 @@ def preprocess4run(nodes):
     cost_distance = get_euclid_distance(initial_pheromone, number_of_nodes, nodes)
     pheromone = [[initial_pheromone] * len(nodes) for _ in range(len(nodes))]
     labels = range(1, number_of_nodes + 1)
-    final_best_nodes = run(mode, nodes)
+    first_node=find_first_node(nodes,first_node)
+    final_best_nodes = run(mode, nodes,first_node)
     plot(nodes, final_best_nodes, mode, labels)
     return final_best_nodes
     
+def find_first_node(nodes,first_node):
+    index=-1
+#     index = np.argwhere(nodes[0] == first_node.x_y)
 
+# #Debugging
+#     print(first_node.x_y)
+#     print(index)
+#     print(nodes[:,0:2])
+    return index
+    
+    
 def final_nodes_concatinating():
     
-    """
-    N'in 2'li permütasyonundan --N küme'den 2'şerli gruplama yapılıyor--
-    Fazla sayıda Köprü node'u oluşuyor. Bu P(N,2) yerine N adet köprü node'u gerekiyor
-    
-    Özet olarak: N adet kümenin herbiri N-1 adet kümeye gitmek yerine N adet küme herbiri farklı bir kümeye gitmesi gerekiyor.
-    
-    """
     bridge_nodes = np.empty([2,0])
     for i in range(n_clusters,1):
-        for point in closest_points:
+        for point in cluster_end_points:
             if point.arrival_cluster==i-1 and point.departure_cluster==i:
                 np.append(bridge_nodes, point)
                 
     finalnodes = np.concatenate((
     nodes[0][nodes00-1],
-    [closest_points[0].x_y],
+    [cluster_end_points[0].x_y],
     nodes[1][nodes01-1],                           
-    [closest_points[1].x_y],
+    [cluster_end_points[1].x_y],
     nodes[2][nodes02-1],
-    [closest_points[2].x_y],
+    [cluster_end_points[2].x_y],
     nodes[3][nodes03-1]
     ))
     return finalnodes
@@ -303,19 +318,14 @@ if __name__ == '__main__':
 
     
     kmeans = KMeans(n_clusters, init='k-means++', random_state=0).fit(nodes_excel)
-    
- 
-    
-    #TODO Merkez noktaları en yakın kümeler arasında geçiş yapılacak
+
     cluster_centers_=kmeans.cluster_centers_
-    preprocess4run(cluster_centers_)
+    preprocess4run(cluster_centers_,Bridge_Node(-1, -1, -1))
     
     clustered_nodes = np.empty((52,3))
     clustered_nodes[:,:-1] = nodes_excel
     clustered_nodes[:,2]=kmeans.labels_
     
-    # TODO Otomatik hale getirilmeli, Küme geçişlerine Bridge Node, -1,-1 node'u gibi belirgin bir şey koyulabilir.
-    # her class için node ları depolamak için bir dictionary oluşturulur
     nodes = {i: np.empty([0,2]) for i in range(n_clusters)}
 
     # her node'da loop yapılır ve o node uygun sınıfa eklenir 
@@ -326,19 +336,17 @@ if __name__ == '__main__':
     polys = {i: Polygon(nodes[i]) for i in range(n_clusters)}
 
     
-    closest_points,closest_points2,nearest_points_find = find_closest_distance_between_polys(polys)
+    nearest_points_,cluster_end_points,cluster_start_points = find_closest_distance_between_polys(polys)
 
-    
-    nodes0, nodes1, nodes2, nodes3 = nodes
-    
+      
     # TODO : kümenin gezi için başlayacağı node preprocess4run a ek parametre eklenerek yollanmalı. ?(nur)
-    #preprocessed_nodes = [preprocess4run(nodes[i],closest_points2[i].x_y ) for i in range(n_clusters)] ?(nur)
+    #preprocessed_nodes = [preprocess4run(nodes[i],cluster_start_points[i].x_y ) for i in range(n_clusters)] ?(nur)
 
-    preprocessed_nodes = [preprocess4run(nodes[i]) for i in range(n_clusters)]
+    preprocessed_nodes = [preprocess4run(nodes[i],cluster_start_points[i]) for i in range(n_clusters)]
+    
+    #Todo Mapping N küme için yapılmalı
     nodes00, nodes01, nodes02, nodes03 = map(np.array, preprocessed_nodes) 
     
-    #İndis düzenleme işi aco içinde yapılacak
-
     finalnodes = np.empty([2,0])
     finalnodes = final_nodes_concatinating()
     
