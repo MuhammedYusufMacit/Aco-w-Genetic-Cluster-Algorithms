@@ -14,14 +14,14 @@ from shapely.geometry import Polygon
 
 """
 TODO's
-Cluster_End_Nodes Karınca Kolonisinın çalıştırılacağı nodeların bulunduğu kümelerden çıkarılmalı, Final_nodes kısmında eklenmeli
-Cluster_start_Nodes her kümede tespit edilmeli, tour_construction fonksiyonuna gönderilmeli.
+Cluster_End_Nodes Karınca Kolonisinın çalıştırılacağı nodeların bulunduğu kümelerden çıkarılmalı, Final_nodes kısmında eklenmeli :OK:
+Cluster_start_Nodes her kümede tespit edilmeli, tour_construction fonksiyonuna gönderilmeli.:OK:
     
 Genetic Algoritmalar için: En iyi rotayı bulduktan sonra, bir önceki rotalar düğümleri birleştirip çaprazlama /mutasyonözelliği kullanılabilir
-Nodes Mapping N küme için yapılmalı
-find_first_node fonksiyonundaki hatalar giderilmeli
+Nodes Mapping N küme için yapılmalı 
+find_first_node fonksiyonundaki hatalar giderilmeli :OK:
 Merkez noktaları en yakın kümeler arasında geçiş yapılabilir
-Başlangıç ve bitiş nodeları elimizde var fakat bulduğumuz bu nodeları elimizdeki node'larla eşleyemiyoruz. En yakın nokta bulma işleminde bu sorun çözülebilir. Elimizdeki float değer olmamasına rağmen en yakın nokta bulan fonksiyon bir float değer döndürüyor.
+:OK: Başlangıç ve bitiş nodeları elimizde var fakat bulduğumuz bu nodeları elimizdeki node'larla eşleyemiyoruz. En yakın nokta bulma işleminde bu sorun çözülebilir. Elimizdeki float değer olmamasına rağmen en yakın nokta bulan fonksiyon bir float değer döndürüyor.
 """
 
 # FONKSİYONLAR
@@ -48,13 +48,13 @@ class Bridge_Node:
 
 # DEĞİŞKENLER
 paths= 'C:\\Users\\TRON PCH\\Documents\\berlin52.xls', 'C:\\Users\\Turtle\\Datasets\\berlin52.xls', 'C:\\Users\\LENOVO\\OneDrive\\Masaüstü\\berlin52.xls'
-path = paths[2]
+path = paths[1]
 n_clusters = 4
 finishvariable=0.0
 totalLength=0.0
 rho = 0.5
-number_of_iterations=300
-colony_size=200
+number_of_iterations=30
+colony_size=20
 initial_pheromone = 1.0
 initial_pheromone_weight = 1.0
 cluster_end_points = []
@@ -307,23 +307,25 @@ def remove_end_points(nodes,cluster_end_point):
     
 def final_nodes_concatinating():
     
-    bridge_nodes = np.empty([2,0])
-    for i in range(n_clusters,1):
-        for point in cluster_end_points:
-            if point.arrival_cluster==i-1 and point.departure_cluster==i:
-                np.append(bridge_nodes, point)
-    
-    
+    """
+    finalnodes=np.empty([2,0])
+    for i in range(n_clusters):
+            np.append(finalnodes,nodes[i][nodes00])
+            np.append(finalnodes, [cluster_end_points[i].x_y[0]])
+        """
+        
     finalnodes = np.concatenate((
-    nodes[0][nodes00-1],
+    nodes[0][nodes00],
     [cluster_end_points[0].x_y[0]],
-    nodes[1][nodes01-1],                           
+    nodes[1][nodes01],                           
     [cluster_end_points[1].x_y[0]],
-    nodes[2][nodes02-1],
+    nodes[2][nodes02],
     [cluster_end_points[2].x_y[0]],
-    nodes[3][nodes03-1],
+    nodes[3][nodes03],
     [cluster_end_points[3].x_y[0]]
     ))
+        
+    
     return finalnodes
 
 
@@ -365,13 +367,9 @@ if __name__ == '__main__':
     nodes = [remove_end_points(nodes[i],cluster_end_points[i]) for i in range(n_clusters)]
 
 
-      
-    # TODO : kümenin gezi için başlayacağı node preprocess4run a ek parametre eklenerek yollanmalı. ?(nur)
-    #preprocessed_nodes = [preprocess4run(nodes[i],cluster_start_points[i].x_y ) for i in range(n_clusters)] ?(nur)
-
     preprocessed_nodes = [preprocess4run(nodes[i],cluster_start_points[(i-1)%n_clusters]) for i in range(n_clusters)]
     
-    #Todo Mapping N küme için yapılmalı
+    #TODO Mapping N küme için yapılmalı
     nodes00, nodes01, nodes02, nodes03 = map(np.array, preprocessed_nodes) 
     
     finalnodes = np.empty([2,0])
