@@ -18,12 +18,9 @@ Cluster_End_Nodes Karınca Kolonisinın çalıştırılacağı nodeların bulund
 Cluster_start_Nodes her kümede tespit edilmeli, tour_construction fonksiyonuna gönderilmeli.
     
 Genetic Algoritmalar için: En iyi rotayı bulduktan sonra, bir önceki rotalar düğümleri birleştirip çaprazlama /mutasyonözelliği kullanılabilir
-
 Nodes Mapping N küme için yapılmalı
 find_first_node fonksiyonundaki hatalar giderilmeli
-
 Merkez noktaları en yakın kümeler arasında geçiş yapılabilir
-
 Başlangıç ve bitiş nodeları elimizde var fakat bulduğumuz bu nodeları elimizdeki node'larla eşleyemiyoruz. En yakın nokta bulma işleminde bu sorun çözülebilir. Elimizdeki float değer olmamasına rağmen en yakın nokta bulan fonksiyon bir float değer döndürüyor.
 """
 
@@ -51,13 +48,13 @@ class Bridge_Node:
 
 # DEĞİŞKENLER
 paths= 'C:\\Users\\TRON PCH\\Documents\\berlin52.xls', 'C:\\Users\\Turtle\\Datasets\\berlin52.xls', 'C:\\Users\\LENOVO\\OneDrive\\Masaüstü\\berlin52.xls'
-path = paths[1]
+path = paths[2]
 n_clusters = 4
 finishvariable=0.0
 totalLength=0.0
 rho = 0.5
-number_of_iterations=30
-colony_size=30
+number_of_iterations=300
+colony_size=200
 initial_pheromone = 1.0
 initial_pheromone_weight = 1.0
 cluster_end_points = []
@@ -109,9 +106,11 @@ def _select_node(tour_nodes):
 def tour_construction(first_node):
     if first_node==-1:
         #print("Başlangıç Node'u Null geldi, değer 0 olarak atandı")
-        first_node=0
-    tour_nodes = [1] #[random.randint(0, number_of_nodes - 1)]  # rastgele gidilecek düğüm
-
+        first_node=[[0]]
+    
+    tour_nodes = [first_node[0][0]]
+    
+  
     while len(tour_nodes) < number_of_nodes:
         ekle = _select_node(tour_nodes)
         tour_nodes.append(ekle)
@@ -239,24 +238,41 @@ def plot(nodes, final_best_nodes, mode, labels, line_width=1, point_radius=math.
         plt.savefig(name, dpi=dpi)
     plt.show()
     plt.gcf().clear()
-    
+
+
+def closest_points(matrix1, matrix2):
+    min_distance = math.inf
+    closest_points = None
+ 
+
+    for point1 in matrix1:
+        for point2 in matrix2:
+            distance = math.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)
+            if distance < min_distance:
+                min_distance = distance
+                closest_points = (point1, point2)
+
+    return closest_points
 
 def find_closest_distance_between_polys(polygons):
-    
 
-    
     for i in range(n_clusters):
         for j in range(n_clusters):
             if i == j:
                 continue
-            nearest_points_ = nearest_points(polygons[i], polygons[j])
-            point_i_to_j=Bridge_Node(i, j,[nearest_points_[0].x, nearest_points_[0].y])
+            nearestpoints = closest_points(polygons[i], polygons[j])
+            point_i_to_j=Bridge_Node(i, j,[nearestpoints[0]])
+            
+            nearestpoints = closest_points(polygons[j], polygons[i])
+            point_j_to_i=Bridge_Node(j, i,[nearestpoints[0]])
             
             if j-i ==1 or (i==n_clusters-1 and j==0):
                 cluster_end_points.append(point_i_to_j)
-                cluster_start_points.append(point_i_to_j)
+                cluster_start_points.append(point_j_to_i)
+                
     
-    return nearest_points_,cluster_end_points,cluster_start_points
+
+    return nearestpoints,cluster_end_points,cluster_start_points
 
     
 def preprocess4run(nodes,first_node):
@@ -272,16 +288,21 @@ def preprocess4run(nodes,first_node):
     final_best_nodes = run(mode, nodes,first_node)
     plot(nodes, final_best_nodes, mode, labels)
     return final_best_nodes
-    
+
 def find_first_node(nodes,first_node):
     index=-1
-#     index = np.argwhere(nodes[0] == first_node.x_y)
+    index = np.argwhere((nodes == first_node.x_y).all(axis=1))
+    
+    print("FIRST NODE IN CLUSTER :",index)
+    print(nodes[index])
 
-# #Debugging
-#     print(first_node.x_y)
-#     print(index)
-#     print(nodes[:,0:2])
     return index
+
+def remove_end_points(nodes,cluster_end_point):
+    index = np.argwhere((nodes == cluster_end_point.x_y).all(axis=1))
+    nodes = np.delete(nodes, index, axis=0)
+    
+    return nodes
     
     
 def final_nodes_concatinating():
@@ -291,15 +312,17 @@ def final_nodes_concatinating():
         for point in cluster_end_points:
             if point.arrival_cluster==i-1 and point.departure_cluster==i:
                 np.append(bridge_nodes, point)
-                
+    
+    
     finalnodes = np.concatenate((
     nodes[0][nodes00-1],
-    [cluster_end_points[0].x_y],
+    [cluster_end_points[0].x_y[0]],
     nodes[1][nodes01-1],                           
-    [cluster_end_points[1].x_y],
+    [cluster_end_points[1].x_y[0]],
     nodes[2][nodes02-1],
-    [cluster_end_points[2].x_y],
-    nodes[3][nodes03-1]
+    [cluster_end_points[2].x_y[0]],
+    nodes[3][nodes03-1],
+    [cluster_end_points[3].x_y[0]]
     ))
     return finalnodes
 
@@ -320,9 +343,9 @@ if __name__ == '__main__':
     kmeans = KMeans(n_clusters, init='k-means++', random_state=0).fit(nodes_excel)
 
     cluster_centers_=kmeans.cluster_centers_
-    preprocess4run(cluster_centers_,Bridge_Node(-1, -1, -1))
+    #preprocess4run(cluster_centers_,Bridge_Node(-1, -1, -1))
     
-    clustered_nodes = np.empty((52,3))
+    clustered_nodes = np.empty((len(nodes_excel),3))
     clustered_nodes[:,:-1] = nodes_excel
     clustered_nodes[:,2]=kmeans.labels_
     
@@ -336,13 +359,17 @@ if __name__ == '__main__':
     polys = {i: Polygon(nodes[i]) for i in range(n_clusters)}
 
     
-    nearest_points_,cluster_end_points,cluster_start_points = find_closest_distance_between_polys(polys)
+    nearest_points_,cluster_end_points,cluster_start_points = find_closest_distance_between_polys(nodes)
+    
+        
+    nodes = [remove_end_points(nodes[i],cluster_end_points[i]) for i in range(n_clusters)]
+
 
       
     # TODO : kümenin gezi için başlayacağı node preprocess4run a ek parametre eklenerek yollanmalı. ?(nur)
     #preprocessed_nodes = [preprocess4run(nodes[i],cluster_start_points[i].x_y ) for i in range(n_clusters)] ?(nur)
 
-    preprocessed_nodes = [preprocess4run(nodes[i],cluster_start_points[i]) for i in range(n_clusters)]
+    preprocessed_nodes = [preprocess4run(nodes[i],cluster_start_points[(i-1)%n_clusters]) for i in range(n_clusters)]
     
     #Todo Mapping N küme için yapılmalı
     nodes00, nodes01, nodes02, nodes03 = map(np.array, preprocessed_nodes) 
@@ -351,7 +378,7 @@ if __name__ == '__main__':
     finalnodes = final_nodes_concatinating()
     
  
-    nodes=finalnodes.reshape(len(clustered_nodes)+3,2)
+    nodes=finalnodes.reshape(len(clustered_nodes),2)
     final_best_nodes=[]
     for i in range(len(nodes)):
         final_best_nodes.append(i)
