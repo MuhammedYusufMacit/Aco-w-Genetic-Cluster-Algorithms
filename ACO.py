@@ -11,11 +11,12 @@ import numpy as np
 from scipy.spatial import distance
 from shapely.ops import nearest_points
 from shapely.geometry import Polygon
+from collections import defaultdict
 
 """
 TODO's
-Cluster_End_Nodes Karınca Kolonisinın çalıştırılacağı nodeların bulunduğu kümelerden çıkarılmalı, Final_nodes kısmında eklenmeli :OK:
-Cluster_start_Nodes her kümede tespit edilmeli, tour_construction fonksiyonuna gönderilmeli.:OK:
+Clust, er_End_Nodes Karınca Kolonisinın çalıştırılacağı nodeların bulunduğu kümelerden çıkarılmalı, Final_nodes kısmında eklenmeli :OK:
+Cluster_start_Nodes her kümede tespit edilmelitour_construction fonksiyonuna gönderilmeli.:OK:
     
 Genetic Algoritmalar için: En iyi rotayı bulduktan sonra, bir önceki rotalar düğümleri birleştirip çaprazlama /mutasyonözelliği kullanılabilir
 Nodes Mapping N küme için yapılmalı 
@@ -37,6 +38,10 @@ Merkez noktaları en yakın kümeler arasında geçiş yapılabilir
 # plot()
 # find_closest_distance_between_polys()
 # preprocess4run()
+class Node:
+    def __init__(self, x_y, index): #constructor that takes 3 arguments (the self is the class itself)
+        self.index=index
+        self.x_y=x_y
 
 class Bridge_Node:
 
@@ -48,17 +53,20 @@ class Bridge_Node:
 
 # DEĞİŞKENLER
 paths= 'C:\\Users\\TRON PCH\\Documents\\berlin52.xls', 'C:\\Users\\Turtle\\Datasets\\berlin52.xls', 'C:\\Users\\LENOVO\\OneDrive\\Masaüstü\\berlin52.xls'
-path = paths[1]
+path = paths[2]
 n_clusters = 4
 finishvariable=0.0
 totalLength=0.0
 rho = 0.5
 number_of_iterations=30
-colony_size=20
+colony_size=50
 initial_pheromone = 1.0
 initial_pheromone_weight = 1.0
 cluster_end_points = []
 cluster_start_points = []
+I_am_here=np.empty([0,2])
+b = (0,0)
+I_am_here = np.vstack([I_am_here, b])
 def weighted_random_choice(choices):
     max = sum(choices.values())
     pick = random.uniform(0, max)
@@ -99,21 +107,31 @@ def _select_node(tour_nodes):
 
     # en yüksek olasılığa göre gidilecek düğüm seçildi, rulet secimi
     selected = weighted_random_choice(probabilities)
-
+    
     return selected
 
 # karıncanın bir sonraki gideceğim düğüm belirlendi, burada tüm rota oluşturuluyor
-def tour_construction(first_node):
+def tour_construction(first_node,nodes,index):
     if first_node==-1:
         #print("Başlangıç Node'u Null geldi, değer 0 olarak atandı")
         first_node=[[0]]
+        
+    tour_nodes = [first_node]
+
+    if ((first_node != 7) & (first_node != 0) & (first_node != 9) & (first_node != 8)):
+        """
+        print("***")
+        print(first_node)
+        print(nodes)
+        print(index)
+        print(index[first_node])
+        """
     
-    tour_nodes = [first_node[0][0]]
-    
-  
-    while len(tour_nodes) < number_of_nodes:
+    while len(tour_nodes) < number_of_nodes: 
         ekle = _select_node(tour_nodes)
         tour_nodes.append(ekle)
+        
+    #index[tour_nodes-1]
     return tour_nodes
 
 # tüm rotası belirlenen karıncanın yolunun ne kadar olduğu belirleniyor
@@ -155,7 +173,7 @@ def _evaporation():
 
     return pheromone
 
-def _aco(nodes,first_node):
+def _aco(nodes,index,first_node):
     # son durumda en iyi düğüm ve uzunluk bilgisini tutmak için kullanılacaklar
 
     final_best_nodes = None
@@ -171,10 +189,9 @@ def _aco(nodes,first_node):
         # start1 = time.perf_counter()
         # her iterasyonda karıncalar için rota oluşturulup yol hesabı yapılıyor
         for i in range(colony_size):
-            ants_nodes.append(tour_construction(first_node))
+            ants_nodes.append(tour_construction(first_node,nodes,index))
         # finish1 = time.perf_counter()
         # print(f'Finished in {round(finish1 - start1, 4)} sec(s)')
-
         for ant in ants_nodes:
             ants_distance.append(get_instant_distance(ant))
 
@@ -184,27 +201,34 @@ def _aco(nodes,first_node):
             if ants_distance[i] < final_best_distance:
                 final_best_nodes = ants_nodes[i]
                 final_best_distance = ants_distance[i]
-                
         # işlem sonucu buharlaşma yapılıyor
         pheromone = _evaporation()
-        #plot(nodes, final_best_nodes, mode, labels) #!!!!!    
+        #plot(nodes, final_best_nodes, mode, labels) #!!!!! 
+    
+    current_index =[]
+    for i in range(len(final_best_nodes)):
+        current_index.append(index[final_best_nodes[i]])
+        
+    #print(current_index)
+    #print("FINAL****")
+    #print(final_best_nodes)
+    
     finish = time.perf_counter()
-    print()
     _aco.finishvariable=round(finish - start, 4)
     print(f'Finished in {round(finish - start, 4)} sec(s)')
 
-    return final_best_nodes, final_best_distance
+    return final_best_nodes, final_best_distance, current_index
 
 
-def run(mode, nodes,first_node):
+def run(mode, nodes,index,first_node):
     print('Started : {0}'.format(mode))
-    final_best_nodes, final_best_distance = _aco(nodes,first_node)
-
+    final_best_nodes, final_best_distance, current_index = _aco(nodes,index,first_node)
     print('Ended : {0}'.format(mode))
-    print('Sequence : <- {0} ->'.format(' - '.join(str(labels[i]) for i in final_best_nodes)))
+    print('Sequence : <- {0} ->'.format(' - '.join(str(current_index[i]) for i in range(len(current_index)))))
+    #print("TRUE DISTANCE")
     print('Total distance travelled to complete the tour : {0}\n'.format(round(final_best_distance, 2)))
-    run.totalLength=round(final_best_distance, 2)
-    return final_best_nodes
+    run.totalLength=round(final_best_distance, 2) 
+    return current_index
 
 def finalplot(nodes,final_best_nodes):
     
@@ -215,22 +239,24 @@ def finalplot(nodes,final_best_nodes):
     #SUM(Kümelerin Distance'ı + köprülerin distance'ı)
     
     run.totalLength=round(final_best_distance, 2)
-    print('Sequence : <- {0} ->'.format(' - '.join(str(labels[i]) for i in final_best_nodes)))
+    print('Sequence : <- {0} ->'.format(' - '.join(str(final_best_nodes[i]) for i in range(len(final_best_nodes)))))
     print('Total distance travelled to complete the tour : {0}\n'.format(round(final_best_distance, 2)))
-    plot(nodes, final_best_nodes, mode, labels)
+    plot(nodes, final_best_nodes, mode, final_best_nodes)
 
 
 # ekrana grafik çıkarmak için
 def plot(nodes, final_best_nodes, mode, labels, line_width=1, point_radius=math.sqrt(2.0), annotation_size=8, dpi=120, save=True, name=None):
-    x = [nodes[i][0] for i in final_best_nodes]
-    x.append(x[0])
-    y = [nodes[i][1] for i in final_best_nodes]
-    y.append(y[0])
+    x = []
+    y = []
+    for i in range(len(final_best_nodes)):
+        x.append(nodes[i][0])
+        y.append(nodes[i][1])
+        
     plt.plot(x, y, linewidth=line_width)
     plt.scatter(x, y, s=math.pi * (point_radius ** 2.0))
     printvariable="ACO TIME: " + str(_aco.finishvariable) +" ROUTE: "+ str(run.totalLength)+" Iter:" + str(number_of_iterations) + " CSize: " + str(colony_size)
     plt.title(printvariable)
-    for i in final_best_nodes:
+    for i in range(len(final_best_nodes)):
         plt.annotate(labels[i], nodes[i], size=annotation_size)
     if save:
         if name is None:
@@ -244,9 +270,8 @@ def closest_points(matrix1, matrix2):
     min_distance = math.inf
     closest_points = None
  
-
-    for point1 in matrix1:
-        for point2 in matrix2:
+    for point1 in matrix1['x_y']:
+        for point2 in matrix2['x_y']:
             distance = math.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)
             if distance < min_distance:
                 min_distance = distance
@@ -275,7 +300,7 @@ def find_closest_distance_between_polys(polygons):
     return nearestpoints,cluster_end_points,cluster_start_points
 
     
-def preprocess4run(nodes,first_node):
+def preprocess4run(nodes,index,first_node):
     global pheromone
     global labels
     global cost_distance
@@ -285,50 +310,72 @@ def preprocess4run(nodes,first_node):
     pheromone = [[initial_pheromone] * len(nodes) for _ in range(len(nodes))]
     labels = range(1, number_of_nodes + 1)
     first_node=find_first_node(nodes,first_node)
-    final_best_nodes = run(mode, nodes,first_node)
+    final_best_nodes = run(mode, nodes,index,first_node)
     plot(nodes, final_best_nodes, mode, labels)
     return final_best_nodes
 
 def find_first_node(nodes,first_node):
     index=-1
-    index = np.argwhere((nodes == first_node.x_y).all(axis=1))
     
-    print("FIRST NODE IN CLUSTER :",index)
-    print(nodes[index])
+    for i, arr in enumerate(nodes):
+        if (arr == first_node.x_y).all():
+            index = i
 
-    return index
-
-def remove_end_points(nodes,cluster_end_point):
-    index = np.argwhere((nodes == cluster_end_point.x_y).all(axis=1))
-    nodes = np.delete(nodes, index, axis=0)
-    
-    return nodes
-    
-    
-def final_nodes_concatinating():
+    #index = np.argwhere((nodes == first_node.x_y).all(axis=1))
     
     """
-    finalnodes=np.empty([2,0])
-    for i in range(n_clusters):
-            np.append(finalnodes,nodes[i][nodes00])
-            np.append(finalnodes, [cluster_end_points[i].x_y[0]])
-        """
-        
-    finalnodes = np.concatenate((
-    nodes[0][nodes00],
-    [cluster_end_points[0].x_y[0]],
-    nodes[1][nodes01],                           
-    [cluster_end_points[1].x_y[0]],
-    nodes[2][nodes02],
-    [cluster_end_points[2].x_y[0]],
-    nodes[3][nodes03],
-    [cluster_end_points[3].x_y[0]]
-    ))
-        
+    print("FIRST NODE IN CLUSTER :",index)
+    print(nodes[index])
+    """
+    return index
+
+def remove_end_points(nodes,i,cluster_end_point):
+    
+    for j, x in enumerate(nodes[i]['x_y']):
+        if (x == cluster_end_point.x_y[0]).all():
+            del nodes[i]['x_y'][j]
+            del nodes[i]['index'][j]
+
+    
+    #nodes = np.delete(nodes[j], index, axis=0)
+    return nodes
+    
+def final_nodes_concatinating():
+   
+    finalnodes = np.empty([2,0])
+    new_nodes_excel=[]
+    new_nodes_excel = np.array(nodes_excel)
+    
+    finalnodes = np.concatenate([    
+    nodes_excel[nodes00 - 1],
+    np.array([cluster_end_points[0].x_y[0]]),
+    nodes_excel[nodes01 - 1],
+    np.array([cluster_end_points[1].x_y[0]]),
+    nodes_excel[nodes02 - 1],
+    np.array([cluster_end_points[2].x_y[0]]),
+    nodes_excel[nodes03 - 1],
+    np.array([cluster_end_points[3].x_y[0]])
+    ])
     
     return finalnodes
 
+def find_starting_cluster(cluster_centers_):
+    a=np.empty([0,2])
+    cluster_centers_ = cluster_centers_.astype(int)
+    
+    a=np.append(a, I_am_here)
+    a=np.append(a, cluster_centers_)
+    
+    a=a.reshape(int(len(a)/2),2)
+    cluster_centers_distances = get_euclid_distance(initial_pheromone, 5,a )
+    res = []
+    for val in cluster_centers_distances[0]:
+        if val != None :
+            res.append(val)
+    return np.argmin(res)
 
+
+    
 
 if __name__ == '__main__':
 
@@ -345,43 +392,85 @@ if __name__ == '__main__':
     kmeans = KMeans(n_clusters, init='k-means++', random_state=0).fit(nodes_excel)
 
     cluster_centers_=kmeans.cluster_centers_
-    #preprocess4run(cluster_centers_,Bridge_Node(-1, -1, -1))
+    find_starting_cluster(cluster_centers_)
     
-    clustered_nodes = np.empty((len(nodes_excel),3))
-    clustered_nodes[:,:-1] = nodes_excel
-    clustered_nodes[:,2]=kmeans.labels_
+
+    nodes_excel = pd.read_excel(path).values
     
-    nodes = {i: np.empty([0,2]) for i in range(n_clusters)}
-
-    # her node'da loop yapılır ve o node uygun sınıfa eklenir 
-    for node in clustered_nodes:
-        nodes[node[2]] = np.append(nodes[node[2]], [node[:2]], axis=0)
-
-    # her sınıf için poligon oluşturulur. 
-    polys = {i: Polygon(nodes[i]) for i in range(n_clusters)}
-
+    index_values = np.arange(len(nodes_excel)) + 1
     
-    nearest_points_,cluster_end_points,cluster_start_points = find_closest_distance_between_polys(nodes)
+    nodes_list = []
+    for row, index,label in zip(nodes_excel, index_values,kmeans.labels_):
+        x_y = np.array(row[:2], dtype=np.float64)  # Get the x, y coordinates
+        node = Node(x_y, index)  # Create a new Nodes object
+        node.label = label
+        nodes_list.append(node)  # Add the new object to the list
     
-        
-    nodes = [remove_end_points(nodes[i],cluster_end_points[i]) for i in range(n_clusters)]
+   
+    label=kmeans.labels_
+ 
+    grouped_nodes = {label: {'x_y': [], 'index': []} for label in set(kmeans.labels_)}
+    for node in nodes_list:
+        grouped_nodes[node.label]['x_y'].append(node.x_y)
+        grouped_nodes[node.label]['index'].append(node.index)
 
+    nearest_points_,cluster_end_points,cluster_start_points = find_closest_distance_between_polys(grouped_nodes)
+    
+    
+    for i in range(n_clusters):
+        grouped_nodes = remove_end_points(grouped_nodes,i,cluster_end_points[i]) 
 
-    preprocessed_nodes = [preprocess4run(nodes[i],cluster_start_points[(i-1)%n_clusters]) for i in range(n_clusters)]
+    preprocessed_nodes = [preprocess4run(grouped_nodes[i]['x_y'],grouped_nodes[i]['index'],cluster_start_points[(i-1)%n_clusters]) for i in range(n_clusters)]
+    cc = preprocessed_nodes
     
     #TODO Mapping N küme için yapılmalı
     nodes00, nodes01, nodes02, nodes03 = map(np.array, preprocessed_nodes) 
     
+    finalnodes = []
+        
+    xy_list = grouped_nodes
+    
+
     finalnodes = np.empty([2,0])
     finalnodes = final_nodes_concatinating()
-    
+    son = finalnodes
  
-    nodes=finalnodes.reshape(len(clustered_nodes),2)
+    nodes=finalnodes.reshape(52,2)
+    son2 = nodes
     final_best_nodes=[]
     for i in range(len(nodes)):
         final_best_nodes.append(i)
         
-    finalplot(nodes,final_best_nodes)
+    koordinat =[]
+    # cluster_end_points[0].x_y[0]
+    for i in ((nodes_list)):
+        if(i.x_y == cluster_end_points[0].x_y[0]).all():
+            index0 = i.index
+        if(i.x_y == cluster_end_points[1].x_y[0]).all():
+            index1 = i.index
+        if(i.x_y == cluster_end_points[2].x_y[0]).all():
+            index2 = i.index
+        if(i.x_y == cluster_end_points[3].x_y[0]).all():
+            index3 = i.index
+       
+    #flattened_deneme = nodes00 + index0 + nodes01 + index1 + nodes02 + index2 + nodes03 + index3 
+    
+    
+    flattened_deneme = np.concatenate([    
+    nodes00,
+    np.array([index0]),
+    nodes01,
+    np.array([index1]),
+    nodes02,
+    np.array([index2]),
+    nodes03,
+    np.array([index3]),
+    ])
+
+    flattened = [x for sublist in preprocessed_nodes for x in sublist]
+
+    final_best_nodes_final = final_best_nodes
+    finalplot(nodes,flattened_deneme)
     
 
     finish = time.perf_counter()
