@@ -341,22 +341,31 @@ def remove_end_points(nodes,i,cluster_end_point):
     return nodes
     
 def final_nodes_concatinating():
-   
-    finalnodes = np.empty([2,0])
-    new_nodes_excel=[]
-    new_nodes_excel = np.array(nodes_excel)
-    
-    finalnodes = np.concatenate([    
-    nodes_excel[nodes00 - 1],
-    np.array([cluster_end_points[0].x_y[0]]),
-    nodes_excel[nodes01 - 1],
-    np.array([cluster_end_points[1].x_y[0]]),
-    nodes_excel[nodes02 - 1],
-    np.array([cluster_end_points[2].x_y[0]]),
-    nodes_excel[nodes03 - 1],
-    np.array([cluster_end_points[3].x_y[0]])
-    ])
-    
+
+    bridge_nodes = np.empty([2,0])
+    for i in range(n_clusters,1):
+        for point in cluster_end_points:
+            if point.arrival_cluster==i-1 and point.departure_cluster==i:
+                np.append(bridge_nodes, point)
+
+
+    for i in range(n_clusters):
+        if i==0:
+            finalnodes = np.concatenate((
+            nodes[i][nodes0n[i]-1],
+            [cluster_end_points[i].x_y]
+            ))
+
+        elif i != n_clusters-1:
+            finalnodes = np.concatenate((finalnodes,
+            nodes[i][nodes0n[i]-1],
+            [cluster_end_points[i].x_y]
+            ))
+
+        else:
+            finalnodes = np.concatenate((finalnodes,
+            nodes[i][nodes0n[i]-1]
+            ))
     return finalnodes
 
 def find_starting_cluster(cluster_centers_):
@@ -423,8 +432,7 @@ if __name__ == '__main__':
     preprocessed_nodes = [preprocess4run(grouped_nodes[i]['x_y'],grouped_nodes[i]['index'],cluster_start_points[(i-1)%n_clusters]) for i in range(n_clusters)]
     cc = preprocessed_nodes
     
-    #TODO Mapping N küme için yapılmalı
-    nodes00, nodes01, nodes02, nodes03 = map(np.array, preprocessed_nodes) 
+    nodes0n = list(map(np.array, preprocessed_nodes))    
     
     finalnodes = []
         
