@@ -53,7 +53,7 @@ class Bridge_Node:
 
 # DEĞİŞKENLER
 paths= 'C:\\Users\\TRON PCH\\Documents\\berlin52.xls', 'C:\\Users\\Turtle\\Datasets\\berlin52.xls', 'C:\\Users\\LENOVO\\OneDrive\\Masaüstü\\berlin52.xls'
-path = paths[1]
+path = paths[0]
 n_clusters = 4
 finishvariable=0.0
 totalLength=0.0
@@ -269,7 +269,9 @@ def plot(nodes, final_best_nodes, mode, labels, line_width=1, point_radius=math.
     for i in range(len(final_best_nodes)):
         x.append(nodes[i][0])
         y.append(nodes[i][1])
-        
+    x.append(nodes[0][0])
+    y.append(nodes[0][1])
+    
     plt.plot(x, y, linewidth=line_width)
     plt.scatter(x, y, s=math.pi * (point_radius ** 2.0))
     printvariable="ACO TIME: " + str(_aco.finishvariable) +" ROUTE: "+ str(run.totalLength)+" Iter:" + str(number_of_iterations) + " CSize: " + str(colony_size)
@@ -360,20 +362,17 @@ def remove_end_points(nodes,i,cluster_end_point):
     
 def final_nodes_concatinating():
    
-    finalnodes = np.empty([2,0])
+    finalnodes = np.empty([0,2])
     new_nodes_excel=[]
     new_nodes_excel = np.array(nodes_excel)
     
-    finalnodes = np.concatenate([    
-    nodes_excel[nodes00 - 1],
-    np.array([cluster_end_points[0].x_y[0]]),
-    nodes_excel[nodes01 - 1],
-    np.array([cluster_end_points[1].x_y[0]]),
-    nodes_excel[nodes02 - 1],
-    np.array([cluster_end_points[2].x_y[0]]),
-    nodes_excel[nodes03 - 1],
-    np.array([cluster_end_points[3].x_y[0]])
-    ])
+    for i in range(n_clusters):
+        finalnodes = np.concatenate([
+            finalnodes,
+            nodes_excel[nodes0n[i]-1],
+            np.array([cluster_end_points[i].x_y[0]])
+            ])
+
     
     return finalnodes
 
@@ -442,48 +441,38 @@ if __name__ == '__main__':
     cc = preprocessed_nodes
     
     #TODO Mapping N küme için yapılmalı
-    nodes00, nodes01, nodes02, nodes03 = map(np.array, preprocessed_nodes) 
-    
-    finalnodes = []
-        
-    xy_list = grouped_nodes
-    
 
-    finalnodes = np.empty([2,0])
+    nodes0n = list(map(np.array, preprocessed_nodes))
+    xy_list = grouped_nodes
+
     finalnodes = final_nodes_concatinating()
-    son = finalnodes
  
     nodes=finalnodes.reshape(len(nodes_excel),2)
-    son2 = nodes
+
     final_best_nodes=[]
+    koordinat =[]
+    indexn = []
+    flattened_deneme = []
+    
     for i in range(len(nodes)):
         final_best_nodes.append(i)
         
-    koordinat =[]
-    # cluster_end_points[0].x_y[0]
     for i in ((nodes_list)):
-        if(i.x_y == cluster_end_points[0].x_y[0]).all():
-            index0 = i.index
-        if(i.x_y == cluster_end_points[1].x_y[0]).all():
-            index1 = i.index
-        if(i.x_y == cluster_end_points[2].x_y[0]).all():
-            index2 = i.index
-        if(i.x_y == cluster_end_points[3].x_y[0]).all():
-            index3 = i.index
-       
-    #flattened_deneme = nodes00 + index0 + nodes01 + index1 + nodes02 + index2 + nodes03 + index3 
-    
-    
-    flattened_deneme = np.concatenate([    
-    nodes00,
-    np.array([index0]),
-    nodes01,
-    np.array([index1]),
-    nodes02,
-    np.array([index2]),
-    nodes03,
-    np.array([index3]),
-    ])
+        for j in range(n_clusters):
+            if(i.x_y == cluster_end_points[j].x_y[0]).all():
+                indexn.append(i.index)
+        
+
+
+
+    for i in range(n_clusters):
+        
+        flattened_deneme = np.concatenate([
+            flattened_deneme,
+            nodes0n[i],
+            np.array([indexn[i]])
+                                           ])
+
 
     flattened = [x for sublist in preprocessed_nodes for x in sublist]
 
