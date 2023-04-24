@@ -277,7 +277,7 @@ def plot(nodes, final_best_nodes, mode, labels, line_width=1, point_radius=math.
     printvariable="ACO TIME: " + str(_aco.finishvariable) +" ROUTE: "+ str(run.totalLength)+" Iter:" + str(number_of_iterations) + " CSize: " + str(colony_size)
     plt.title(printvariable)
     for i in range(len(final_best_nodes)):
-        plt.annotate(labels[i], nodes[i], size=annotation_size)
+        plt.annotate(int(labels[i]), nodes[i], size=annotation_size)
     if save:
         if name is None:
             name = '{0}.png'.format(mode) 
