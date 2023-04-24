@@ -39,13 +39,13 @@ Merkez noktaları en yakın kümeler arasında geçiş yapılabilir
 # find_closest_distance_between_polys()
 # preprocess4run()
 class Node:
-    def __init__(self, x_y, index): #constructor that takes 3 arguments (the self is the class itself)
+    def __init__(self, x_y, index): 
         self.index=index
         self.x_y=x_y
 
 class Bridge_Node:
 
-    def __init__(self, a, d, x_y): #constructor that takes 3 arguments (the self is the class itself)
+    def __init__(self, a, d, x_y):
         self.arrival_cluster=a
         self.departure_cluster=d
         self.x_y=x_y
@@ -53,7 +53,7 @@ class Bridge_Node:
 
 # DEĞİŞKENLER
 paths= 'C:\\Users\\TRON PCH\\Documents\\berlin52.xls', 'C:\\Users\\Turtle\\Datasets\\berlin52.xls', 'C:\\Users\\LENOVO\\OneDrive\\Masaüstü\\berlin52.xls'
-path = paths[2]
+path = paths[1]
 n_clusters = 4
 finishvariable=0.0
 totalLength=0.0
@@ -67,6 +67,8 @@ cluster_start_points = []
 I_am_here=np.empty([0,2])
 b = (0,0)
 I_am_here = np.vstack([I_am_here, b])
+
+
 def weighted_random_choice(choices):
     max = sum(choices.values())
     pick = random.uniform(0, max)
@@ -230,17 +232,33 @@ def run(mode, nodes,index,first_node):
     run.totalLength=round(final_best_distance, 2) 
     return current_index
 
+def calculate_distance(starting_x, starting_y, destination_x, destination_y):
+    distance = math.hypot(destination_x - starting_x, destination_y - starting_y)  # calculates Euclidean distance (straight-line) distance between two points
+    return distance
+
+def calculate_path(selected_map):
+    total_distance = 0
+    current_point = selected_map[0]
+    for next_point in selected_map[1:]:
+        current_distance = calculate_distance(
+            current_point[0], current_point[1],
+            next_point[0], next_point[1]
+        )
+        #print(current_point, 'to', next_point, '=', current_distance)
+        total_distance += current_distance
+        current_point = next_point
+    return total_distance
+
 def finalplot(nodes,final_best_nodes):
     
     number_of_nodes=len(nodes)
     labels = range(1, number_of_nodes + 1)
     final_best_nodes = final_best_nodes
-    final_best_distance = float("inf")
-    #SUM(Kümelerin Distance'ı + köprülerin distance'ı)
+    final_best_distance = calculate_path(nodes)
     
     run.totalLength=round(final_best_distance, 2)
     print('Sequence : <- {0} ->'.format(' - '.join(str(final_best_nodes[i]) for i in range(len(final_best_nodes)))))
-    print('Total distance travelled to complete the tour : {0}\n'.format(round(final_best_distance, 2)))
+    print('Total distance travelled to complete the tour : {0}\n'.format(round(final_best_distance, 3)))
     plot(nodes, final_best_nodes, mode, final_best_nodes)
 
 
@@ -341,31 +359,22 @@ def remove_end_points(nodes,i,cluster_end_point):
     return nodes
     
 def final_nodes_concatinating():
-
-    bridge_nodes = np.empty([2,0])
-    for i in range(n_clusters,1):
-        for point in cluster_end_points:
-            if point.arrival_cluster==i-1 and point.departure_cluster==i:
-                np.append(bridge_nodes, point)
-
-
-    for i in range(n_clusters):
-        if i==0:
-            finalnodes = np.concatenate((
-            nodes[i][nodes0n[i]-1],
-            [cluster_end_points[i].x_y]
-            ))
-
-        elif i != n_clusters-1:
-            finalnodes = np.concatenate((finalnodes,
-            nodes[i][nodes0n[i]-1],
-            [cluster_end_points[i].x_y]
-            ))
-
-        else:
-            finalnodes = np.concatenate((finalnodes,
-            nodes[i][nodes0n[i]-1]
-            ))
+   
+    finalnodes = np.empty([2,0])
+    new_nodes_excel=[]
+    new_nodes_excel = np.array(nodes_excel)
+    
+    finalnodes = np.concatenate([    
+    nodes_excel[nodes00 - 1],
+    np.array([cluster_end_points[0].x_y[0]]),
+    nodes_excel[nodes01 - 1],
+    np.array([cluster_end_points[1].x_y[0]]),
+    nodes_excel[nodes02 - 1],
+    np.array([cluster_end_points[2].x_y[0]]),
+    nodes_excel[nodes03 - 1],
+    np.array([cluster_end_points[3].x_y[0]])
+    ])
+    
     return finalnodes
 
 def find_starting_cluster(cluster_centers_):
@@ -432,7 +441,8 @@ if __name__ == '__main__':
     preprocessed_nodes = [preprocess4run(grouped_nodes[i]['x_y'],grouped_nodes[i]['index'],cluster_start_points[(i-1)%n_clusters]) for i in range(n_clusters)]
     cc = preprocessed_nodes
     
-    nodes0n = list(map(np.array, preprocessed_nodes))    
+    #TODO Mapping N küme için yapılmalı
+    nodes00, nodes01, nodes02, nodes03 = map(np.array, preprocessed_nodes) 
     
     finalnodes = []
         
@@ -443,7 +453,7 @@ if __name__ == '__main__':
     finalnodes = final_nodes_concatinating()
     son = finalnodes
  
-    nodes=finalnodes.reshape(52,2)
+    nodes=finalnodes.reshape(len(nodes_excel),2)
     son2 = nodes
     final_best_nodes=[]
     for i in range(len(nodes)):
