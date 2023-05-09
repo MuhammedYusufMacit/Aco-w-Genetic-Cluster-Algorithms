@@ -13,18 +13,6 @@ from shapely.ops import nearest_points
 from shapely.geometry import Polygon
 from collections import defaultdict
 
-"""
-TODO's
-Clust, er_End_Nodes Karınca Kolonisinın çalıştırılacağı nodeların bulunduğu kümelerden çıkarılmalı, Final_nodes kısmında eklenmeli :OK:
-Cluster_start_Nodes her kümede tespit edilmelitour_construction fonksiyonuna gönderilmeli.:OK:
-    
-Genetic Algoritmalar için: En iyi rotayı bulduktan sonra, bir önceki rotalar düğümleri birleştirip çaprazlama /mutasyonözelliği kullanılabilir
-Nodes Mapping N küme için yapılmalı 
-find_first_node fonksiyonundaki hatalar giderilmeli :OK:
-Merkez noktaları en yakın kümeler arasında geçiş yapılabilir
-:OK: Başlangıç ve bitiş nodeları elimizde var fakat bulduğumuz bu nodeları elimizdeki node'larla eşleyemiyoruz. En yakın nokta bulma işleminde bu sorun çözülebilir. Elimizdeki float değer olmamasına rağmen en yakın nokta bulan fonksiyon bir float değer döndürüyor.
-"""
-
 # FONKSİYONLAR
 # weighted_random_choice()
 # _select_node()
@@ -50,10 +38,10 @@ class Bridge_Node:
         self.departure_cluster=d
         self.x_y=x_y
 
-
+aaaGLOBAL=0
 # DEĞİŞKENLER
 paths= 'C:\\Users\\TRON PCH\\Documents\\berlin52.xls', 'C:\\Users\\Turtle\\Datasets\\berlin52.xls', 'C:\\Users\\LENOVO\\OneDrive\\Masaüstü\\berlin52.xls'
-path = paths[0]
+path = paths[1]
 n_clusters = 4
 finishvariable=0.0
 totalLength=0.0
@@ -68,6 +56,28 @@ I_am_here=np.empty([0,2])
 b = (0,0)
 I_am_here = np.vstack([I_am_here, b])
 
+def tournament_selection(data):
+    """
+    Given a dictionary of {value: probability} data, randomly selects a value using the tournament selection method.
+    """
+    if len(data) == 0:
+        raise ValueError("No data provided.")
+
+    # Number of data points to consider for selection.
+    k = min(3, len(data))
+
+    # Get the keys of the data as a list.
+    keys = list(data.keys())
+
+    # Perform tournament selection by repeating k times.
+    selected_key = None
+    for i in range(k):
+        # Choose a random key.
+        key = random.choice(keys)
+        if selected_key is None or data[key] > data[selected_key]:
+            selected_key = key
+
+    return selected_key
 
 def weighted_random_choice(choices):
     max = sum(choices.values())
@@ -95,7 +105,6 @@ def _select_node(tour_nodes):
         probability_denominator += (1 / pow(cost_distance[tour_nodes[-1]][unvisited_node], beta)) * \
                                     pow(pheromone[tour_nodes[-1]][unvisited_node], alpha)
 
-
     # tüm düğümler için olasılık hesabı yaptık
     probabilities = {}
     for unvisited_node in unvisited_nodes:
@@ -108,8 +117,9 @@ def _select_node(tour_nodes):
             pass  # do nothing
 
     # en yüksek olasılığa göre gidilecek düğüm seçildi, rulet secimi
-    selected = weighted_random_choice(probabilities)
-    
+    #selected = weighted_random_choice(probabilities)
+    #Turnuva seçilim metodu
+    selected = tournament_selection(probabilities)
     return selected
 
 # karıncanın bir sonraki gideceğim düğüm belirlendi, burada tüm rota oluşturuluyor
@@ -119,16 +129,7 @@ def tour_construction(first_node,nodes,index):
         first_node=[[0]]
         
     tour_nodes = [first_node]
-
-    if ((first_node != 7) & (first_node != 0) & (first_node != 9) & (first_node != 8)):
-        """
-        print("***")
-        print(first_node)
-        print(nodes)
-        print(index)
-        print(index[first_node])
-        """
-    
+   
     while len(tour_nodes) < number_of_nodes: 
         ekle = _select_node(tour_nodes)
         tour_nodes.append(ekle)
@@ -210,11 +211,7 @@ def _aco(nodes,index,first_node):
     current_index =[]
     for i in range(len(final_best_nodes)):
         current_index.append(index[final_best_nodes[i]])
-        
-    #print(current_index)
-    #print("FINAL****")
-    #print(final_best_nodes)
-    
+            
     finish = time.perf_counter()
     _aco.finishvariable=round(finish - start, 4)
     print(f'Finished in {round(finish - start, 4)} sec(s)')
@@ -336,28 +333,16 @@ def preprocess4run(nodes,index,first_node):
 
 def find_first_node(nodes,first_node):
     index=-1
-    
     for i, arr in enumerate(nodes):
         if (arr == first_node.x_y).all():
             index = i
-
-    #index = np.argwhere((nodes == first_node.x_y).all(axis=1))
-    
-    """
-    print("FIRST NODE IN CLUSTER :",index)
-    print(nodes[index])
-    """
     return index
 
 def remove_end_points(nodes,i,cluster_end_point):
-    
     for j, x in enumerate(nodes[i]['x_y']):
         if (x == cluster_end_point.x_y[0]).all():
             del nodes[i]['x_y'][j]
             del nodes[i]['index'][j]
-
-    
-    #nodes = np.delete(nodes[j], index, axis=0)
     return nodes
     
 def final_nodes_concatinating():
@@ -384,15 +369,13 @@ def find_starting_cluster(cluster_centers_):
     a=np.append(a, cluster_centers_)
     
     a=a.reshape(int(len(a)/2),2)
-    cluster_centers_distances = get_euclid_distance(initial_pheromone, 5,a )
+    cluster_centers_distances = get_euclid_distance(initial_pheromone, n_clusters+1,a )
     res = []
     for val in cluster_centers_distances[0]:
         if val != None :
             res.append(val)
     return np.argmin(res)
 
-
-    
 
 if __name__ == '__main__':
 
@@ -404,12 +387,10 @@ if __name__ == '__main__':
     number_of_nodes = len(nodes_excel)
     global cost_distance
     global pheromone
-
-    
     kmeans = KMeans(n_clusters, init='k-means++', random_state=0).fit(nodes_excel)
 
     cluster_centers_=kmeans.cluster_centers_
-    find_starting_cluster(cluster_centers_)
+    #find_starting_cluster(cluster_centers_)
     
 
     nodes_excel = pd.read_excel(path).values
@@ -422,9 +403,6 @@ if __name__ == '__main__':
         node = Node(x_y, index)  # Create a new Nodes object
         node.label = label
         nodes_list.append(node)  # Add the new object to the list
-    
-   
-    label=kmeans.labels_
  
     grouped_nodes = {label: {'x_y': [], 'index': []} for label in set(kmeans.labels_)}
     for node in nodes_list:
@@ -432,23 +410,19 @@ if __name__ == '__main__':
         grouped_nodes[node.label]['index'].append(node.index)
 
     nearest_points_,cluster_end_points,cluster_start_points = find_closest_distance_between_polys(grouped_nodes)
-    
-    
+        
     for i in range(n_clusters):
         grouped_nodes = remove_end_points(grouped_nodes,i,cluster_end_points[i]) 
 
     preprocessed_nodes = [preprocess4run(grouped_nodes[i]['x_y'],grouped_nodes[i]['index'],cluster_start_points[(i-1)%n_clusters]) for i in range(n_clusters)]
-    cc = preprocessed_nodes
-    
-    #TODO Mapping N küme için yapılmalı
 
     nodes0n = list(map(np.array, preprocessed_nodes))
-    xy_list = grouped_nodes
 
     finalnodes = final_nodes_concatinating()
  
     nodes=finalnodes.reshape(len(nodes_excel),2)
 
+    #TODO Flattened_deneme isimlendirme 
     final_best_nodes=[]
     koordinat =[]
     indexn = []
@@ -462,9 +436,6 @@ if __name__ == '__main__':
             if(i.x_y == cluster_end_points[j].x_y[0]).all():
                 indexn.append(i.index)
         
-
-
-
     for i in range(n_clusters):
         
         flattened_deneme = np.concatenate([
@@ -479,6 +450,5 @@ if __name__ == '__main__':
     final_best_nodes_final = final_best_nodes
     finalplot(nodes,flattened_deneme)
     
-
     finish = time.perf_counter()
     print(f'Toplam Süre {round(finish - start, 2)} saniye.')
