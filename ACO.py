@@ -40,9 +40,9 @@ class Bridge_Node:
 
 aaaGLOBAL=0
 # DEĞİŞKENLER
-paths= 'C:\\Users\\TRON PCH\\Documents\\berlin52.xls', 'C:\\Users\\Turtle\\Datasets\\berlin52.xls', 'C:\\Users\\LENOVO\\OneDrive\\Masaüstü\\berlin52.xls'
+paths= 'C:\\Users\\TRON PCH\\Documents\\berlin52.xls', 'C:\\Users\\Turtle\\Datasets\\lin318.xls', 'C:\\Users\\LENOVO\\OneDrive\\Masaüstü\\berlin52.xls'
 path = paths[1]
-n_clusters = 4
+n_clusters = 1
 finishvariable=0.0
 totalLength=0.0
 rho = 0.5
@@ -57,19 +57,11 @@ b = (0,0)
 I_am_here = np.vstack([I_am_here, b])
 
 def tournament_selection(data):
-    """
-    Given a dictionary of {value: probability} data, randomly selects a value using the tournament selection method.
-    """
     if len(data) == 0:
         raise ValueError("No data provided.")
 
-    # Number of data points to consider for selection.
     k = min(3, len(data))
-
-    # Get the keys of the data as a list.
     keys = list(data.keys())
-
-    # Perform tournament selection by repeating k times.
     selected_key = None
     for i in range(k):
         # Choose a random key.
@@ -302,20 +294,29 @@ def find_closest_distance_between_polys(polygons):
         for j in range(n_clusters):
             if i == j:
                 continue
-            nearestpoints = closest_points(polygons[i], polygons[j])
-            point_i_to_j=Bridge_Node(i, j,[nearestpoints[0]])
-            
             nearestpoints = closest_points(polygons[j], polygons[i])
             point_j_to_i=Bridge_Node(j, i,[nearestpoints[0]])
             
             if j-i ==1 or (i==n_clusters-1 and j==0):
-                cluster_end_points.append(point_i_to_j)
                 cluster_start_points.append(point_j_to_i)
                 
     
 
-    return nearestpoints,cluster_end_points,cluster_start_points
+    return nearestpoints,cluster_start_points
 
+def find_cluster_end_points(polygons):
+
+    for i in range(n_clusters):
+        for j in range(n_clusters):
+            if i == j:
+                continue
+            nearestpoints = closest_points(polygons[i], polygons[j])
+            point_i_to_j=Bridge_Node(i, j,[nearestpoints[0]])
+            
+            if j-i ==1 or (i==n_clusters-1 and j==0):
+                cluster_end_points.append(point_i_to_j)
+
+    return cluster_end_points
     
 def preprocess4run(nodes,index,first_node):
     global pheromone
@@ -409,11 +410,12 @@ if __name__ == '__main__':
         grouped_nodes[node.label]['x_y'].append(node.x_y)
         grouped_nodes[node.label]['index'].append(node.index)
 
-    nearest_points_,cluster_end_points,cluster_start_points = find_closest_distance_between_polys(grouped_nodes)
+    cluster_end_points = find_cluster_end_points(grouped_nodes)
         
     for i in range(n_clusters):
         grouped_nodes = remove_end_points(grouped_nodes,i,cluster_end_points[i]) 
 
+    nearest_points_,cluster_start_points = find_closest_distance_between_polys(grouped_nodes)
     preprocessed_nodes = [preprocess4run(grouped_nodes[i]['x_y'],grouped_nodes[i]['index'],cluster_start_points[(i-1)%n_clusters]) for i in range(n_clusters)]
 
     nodes0n = list(map(np.array, preprocessed_nodes))
