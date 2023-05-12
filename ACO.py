@@ -12,6 +12,8 @@ from scipy.spatial import distance
 from shapely.ops import nearest_points
 from shapely.geometry import Polygon
 from collections import defaultdict
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import silhouette_samples, silhouette_score
 
 # FONKSİYONLAR
 # weighted_random_choice()
@@ -38,11 +40,14 @@ class Bridge_Node:
         self.departure_cluster=d
         self.x_y=x_y
 
-aaaGLOBAL=0
 # DEĞİŞKENLER
-paths= 'C:\\Users\\TRON PCH\\Documents\\berlin52.xls', 'C:\\Users\\Turtle\\Datasets\\lin318.xls', 'C:\\Users\\LENOVO\\OneDrive\\Masaüstü\\berlin52.xls'
+paths= 'C:\\Users\\TRON PCH\\Documents\\berlin52.xls', 'C:\\Users\\Turtle\\Datasets\\pr1002.xls', 'C:\\Users\\LENOVO\\OneDrive\\Masaüstü\\berlin52.xls'
+datasets="berlin52","bier127","ts255","lin318","pr439","pcb442","pr1002"
+elbow_n_clusters=[4,1,1,1,1,1]
+#"5533343333443454"
+
 path = paths[1]
-n_clusters = 1
+n_clusters = 4
 finishvariable=0.0
 totalLength=0.0
 rho = 0.5
@@ -329,7 +334,7 @@ def preprocess4run(nodes,index,first_node):
     labels = range(1, number_of_nodes + 1)
     first_node=find_first_node(nodes,first_node)
     final_best_nodes = run(mode, nodes,index,first_node)
-    plot(nodes, final_best_nodes, mode, labels)
+    #plot(nodes, final_best_nodes, mode, labels)
     return final_best_nodes
 
 def find_first_node(nodes,first_node):
@@ -377,17 +382,38 @@ def find_starting_cluster(cluster_centers_):
             res.append(val)
     return np.argmin(res)
 
+def silhouette(veri_seti):
+    # Veri seti yüklenir veya oluşturulur
+    X = veri_seti
+
+    k_range = range(2, 10)
+    max_silhouette_score = -1
+    optimal_k = -1
+    
+    for k in k_range:
+        kmeans = KMeans(n_clusters=k, random_state=42)
+        kmeans.fit(X)
+        cluster_labels = kmeans.labels_
+        silhouette_avg = silhouette_score(X, cluster_labels)
+    
+        # Silhouette skoru kontrol edilir ve en yüksek skor güncellenirse optimum küme sayısı güncellenir
+        if silhouette_avg > max_silhouette_score:
+            max_silhouette_score = silhouette_avg
+            optimal_k = k
+    print("Number of Cluster: ",optimal_k)
+    return optimal_k
 
 if __name__ == '__main__':
-
+                
     start = time.perf_counter()
     mode = 'Standard ACO without 2opt'
-    
-    #kroa100 - pr1002 - berlin52
+
     nodes_excel = pd.read_excel(path).values
     number_of_nodes = len(nodes_excel)
     global cost_distance
     global pheromone
+    
+    #n_clusters=silhouette(nodes_excel)
     kmeans = KMeans(n_clusters, init='k-means++', random_state=0).fit(nodes_excel)
 
     cluster_centers_=kmeans.cluster_centers_
@@ -454,3 +480,8 @@ if __name__ == '__main__':
     
     finish = time.perf_counter()
     print(f'Toplam Süre {round(finish - start, 2)} saniye.')
+    #own-optimum/own
+    #Sum-Tıme
+    #Kritik fonksiyon süreleri.
+    #Eng yorum satırları
+    
