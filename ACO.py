@@ -13,7 +13,8 @@ from shapely.ops import nearest_points
 from shapely.geometry import Polygon
 from collections import defaultdict
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import silhouette_samples, silhouette_score
+from openpyxl import load_workbook
+import multiprocessing
 
 # FONKSİYONLAR
 # weighted_random_choice()
@@ -41,7 +42,7 @@ class Bridge_Node:
         self.x_y=x_y
 
 # DEĞİŞKENLER
-paths= 'C:\\Users\\TRON PCH\\Documents\\berlin52.xls', 'C:\\Users\\Turtle\\Datasets\\pr1002.xls', 'C:\\Users\\LENOVO\\OneDrive\\Masaüstü\\berlin52.xls'
+paths= 'C:\\Users\\TRON PCH\\Documents\\berlin52.xls', 'C:\\Users\\Turtle\\Datasets\\berlin52.xls', 'C:\\Users\\LENOVO\\OneDrive\\Masaüstü\\berlin52.xls'
 datasets="berlin52","bier127","ts255","lin318","pr439","pcb442","pr1002"
 elbow_n_clusters=[4,1,1,1,1,1]
 #"5533343333443454"
@@ -51,8 +52,8 @@ n_clusters = 4
 finishvariable=0.0
 totalLength=0.0
 rho = 0.5
-number_of_iterations=30
-colony_size=50
+number_of_iterations=150
+colony_size=500
 initial_pheromone = 1.0
 initial_pheromone_weight = 1.0
 cluster_end_points = []
@@ -60,6 +61,9 @@ cluster_start_points = []
 I_am_here=np.empty([0,2])
 b = (0,0)
 I_am_here = np.vstack([I_am_here, b])
+
+def preprocess_node(node):
+    return preprocess4run(node['x_y'], node['index'], cluster_start_points[(node['index'] - 1) % n_clusters])
 
 def tournament_selection(data):
     if len(data) == 0:
@@ -254,6 +258,7 @@ def finalplot(nodes,final_best_nodes):
     print('Sequence : <- {0} ->'.format(' - '.join(str(final_best_nodes[i]) for i in range(len(final_best_nodes)))))
     print('Total distance travelled to complete the tour : {0}\n'.format(round(final_best_distance, 3)))
     plot(nodes, final_best_nodes, mode, final_best_nodes)
+    return final_best_distance
 
 
 # ekrana grafik çıkarmak için
@@ -329,7 +334,12 @@ def preprocess4run(nodes,index,first_node):
     global cost_distance
     global number_of_nodes
     number_of_nodes=len(nodes)
+    
+    distance_calc_time_start = time.perf_counter()
     cost_distance = get_euclid_distance(initial_pheromone, number_of_nodes, nodes)
+    distance_calc_time_finish = time.perf_counter()
+    
+    
     pheromone = [[initial_pheromone] * len(nodes) for _ in range(len(nodes))]
     labels = range(1, number_of_nodes + 1)
     first_node=find_first_node(nodes,first_node)
@@ -381,7 +391,7 @@ def find_starting_cluster(cluster_centers_):
         if val != None :
             res.append(val)
     return np.argmin(res)
-
+"""
 def silhouette(veri_seti):
     # Veri seti yüklenir veya oluşturulur
     X = veri_seti
@@ -402,9 +412,9 @@ def silhouette(veri_seti):
             optimal_k = k
     print("Number of Cluster: ",optimal_k)
     return optimal_k
-
+"""
 if __name__ == '__main__':
-                
+    
     start = time.perf_counter()
     mode = 'Standard ACO without 2opt'
 
@@ -414,7 +424,9 @@ if __name__ == '__main__':
     global pheromone
     
     #n_clusters=silhouette(nodes_excel)
+    clustering_time_start = time.perf_counter()
     kmeans = KMeans(n_clusters, init='k-means++', random_state=0).fit(nodes_excel)
+
 
     cluster_centers_=kmeans.cluster_centers_
     #find_starting_cluster(cluster_centers_)
@@ -442,8 +454,25 @@ if __name__ == '__main__':
         grouped_nodes = remove_end_points(grouped_nodes,i,cluster_end_points[i]) 
 
     nearest_points_,cluster_start_points = find_closest_distance_between_polys(grouped_nodes)
-    preprocessed_nodes = [preprocess4run(grouped_nodes[i]['x_y'],grouped_nodes[i]['index'],cluster_start_points[(i-1)%n_clusters]) for i in range(n_clusters)]
+    
+    clustering_time_finish= time.perf_counter()
+    clustering_time=round(clustering_time_finish - clustering_time_start, 2)
 
+    distance_calculation_time_start = time.perf_counter()
+    """
+    pool = multiprocessing.Pool()
+
+    # Map the function to the list of grouped nodes and execute it in parallel
+    preprocessed_nodes = pool.map(preprocess_node, grouped_nodes)
+
+    pool.close()
+    pool.join()
+    """
+    preprocessed_nodes = [preprocess4run(grouped_nodes[i]['x_y'],grouped_nodes[i]['index'],cluster_start_points[(i-1)%n_clusters]) for i in range(n_clusters)]
+    distance_calculation_time_finish= time.perf_counter()
+    distance_calculation_time=round(distance_calculation_time_finish - distance_calculation_time_start, 2)
+    
+    
     nodes0n = list(map(np.array, preprocessed_nodes))
 
     finalnodes = final_nodes_concatinating()
@@ -476,12 +505,52 @@ if __name__ == '__main__':
     flattened = [x for sublist in preprocessed_nodes for x in sublist]
 
     final_best_nodes_final = final_best_nodes
-    finalplot(nodes,flattened_deneme)
+    Improved_ACO_Distance=finalplot(nodes,flattened_deneme)
     
     finish = time.perf_counter()
-    print(f'Toplam Süre {round(finish - start, 2)} saniye.')
-    #own-optimum/own
-    #Sum-Tıme
-    #Kritik fonksiyon süreleri.
+    
+    print("Total Distance: ",str(round(Improved_ACO_Distance,4)))
+    print(f'Total Time {round(finish - start, 2)} saniye.')
+    print("Colony size: " + str(colony_size))
+    print("No Iter: "+ str(number_of_iterations) )
+    print("Cluster Count: "+ str(n_clusters))
+    Optimal_Distance=input("Best Solution:")
+    print("Error Rate: "+str(round((Improved_ACO_Distance - float(Optimal_Distance))/Improved_ACO_Distance,4)))
+    print("Distance_calculation_time: "+str(distance_calculation_time))
+    print("Clustering Time: "+str(clustering_time))
+    print("Average Tour Time: "+str(distance_calculation_time/n_clusters))
+   
+       
+    # Load the existing Excel file
+    filename = 'output.xlsx'
+    book = load_workbook(filename)
+    
+    # Select the sheet to write the data
+    writer = pd.ExcelWriter(filename, engine='openpyxl')
+    writer.book = book
+    
+    output_data = {
+        "Total Distance": [str(round(Improved_ACO_Distance,4))],
+        "Total Time": [round(finish - start, 2)],
+        "Colony size": [colony_size],
+        "Number of Iteration": [number_of_iterations],
+        "Cluster Count": [n_clusters],
+        "Optimal Distance": [Optimal_Distance],
+        "Error Rate": [round((Improved_ACO_Distance - float(Optimal_Distance))/Improved_ACO_Distance, 4)],
+        "Distance Calculation Time": [distance_calculation_time],
+        "Clustering Time": [clustering_time],
+        "Average Tour Time": [distance_calculation_time/n_clusters],
+        "Selection": ["Tournament"],
+        "Dataset": ["Berlin52"]
+    }
+    
+    df = pd.DataFrame(output_data)
+
+    # Write DataFrame to the sheet
+    df.to_excel(writer, index=False, header=False, sheet_name='Sheet1', startrow=writer.sheets['Sheet1'].max_row)
+    
+    writer.save()
+    writer.close()
+    
     #Eng yorum satırları
     
